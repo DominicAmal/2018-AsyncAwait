@@ -1,49 +1,405 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+    <title>Native async/await in Node.js</title>
 
-		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/sky.css">
 
-		<!-- Theme used for syntax highlighting of code -->
-		<link rel="stylesheet" href="lib/css/zenburn.css">
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="lib/css/tomorrow.css">
 
-		<!-- Printing and PDF exports -->
-		<script>
-			var link = document.createElement( 'link' );
-			link.rel = 'stylesheet';
-			link.type = 'text/css';
-			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
-			document.getElementsByTagName( 'head' )[0].appendChild( link );
-		</script>
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
-			</div>
-		</div>
+    <!-- My own customizations -->
+    <style>
+      .reveal pre code {
+        padding: 1em;
+      }
+      .reveal mark {
+        background-color: #ffaaaa;
+      }
+      .reveal li {
+        margin: 0.5em 0;
+      }
+    </style>
 
-		<script src="lib/js/head.min.js"></script>
-		<script src="js/reveal.js"></script>
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+<!-- ======= SLIDES START ======= -->
 
-		<script>
-			// More info about config & dependencies:
-			// - https://github.com/hakimel/reveal.js#configuration
-			// - https://github.com/hakimel/reveal.js#dependencies
-			Reveal.initialize({
-				dependencies: [
-					{ src: 'plugin/markdown/marked.js' },
-					{ src: 'plugin/markdown/markdown.js' },
-					{ src: 'plugin/notes/notes.js', async: true },
-					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
-				]
-			});
-		</script>
-	</body>
+<section>
+  <br/>
+  <br/>
+  <h2>Native async/await<br/>in Node.js</h2>
+  <h3><em>Are we there yet?</em></h3>
+  <br/>
+  <br/>
+  <div style="text-align: right">Miroslav Bajtoš</div>
+</section>
+
+<section>
+  <h2>Agenda</h2>
+  <ul>
+    <li class="fragment"><code>async</code> and <code>await</code> are awesome!
+    <li class="fragment">status in JavaScript and V8
+    <li class="fragment">support in Node.js core APIs
+    <li class="fragment">ecosystem readiness
+    <li class="fragment">tips, tricks and caveats
+  </ul>
+</section>
+
+<section>
+  <section>
+    <h2>ECMAScript &amp; V8</h2>
+    a short history
+  </section>
+  <section>
+    <p>January 2014:
+    <p>TC39 discussion begins
+  </section>
+  <section>
+    <p>October 2015:
+    <p>Stage 3 ("Candidate")
+  </section>
+
+  <section>
+    <p>October 2016:
+    <p>Stage 4 ("Finished")
+  </section>
+
+  <section>
+    <p>January 2017:
+    <p>ES2017
+  </section>
+
+  <section>
+    <p>&nbsp;
+    <p>February 2017:
+    <p>Node.js 7.6.0 (V8 5.5)
+    <p>&nbsp;
+    <p><code>async/await</code> available without any flags
+  </section>
+
+  <section>
+    <p>&nbsp;
+    <p>May 2017:
+    <p>Node.js 8.0.0 (V8 5.8)
+    <p>&nbsp;
+    <p>major speed improvements
+  </section>
+
+  <section>
+    <p>&nbsp;
+    <p>August 2017:
+    <p>Node.js 8.4.0 (V8 6.0)
+    <p>&nbsp;
+    <p><em>Hello TurboFan!</em>
+    <p>(even more speed improvements)
+  </section>
+
+  <section>
+    <p>October 2017:
+    <p>Node.js 8.x enters LTS mode
+    <p><em>(V8 6.1)</em>
+  </section>
+</section>
+
+<section>
+  <h2>My personal story</h2>
+  <p>async, await &amp; LoopBack Next
+</section>
+
+<section>
+  <section>
+    <h2><code>async &amp; await</code></h2>
+    and its goodness
+  </section>
+
+  <section>
+    <h3>Cleaner code</h3>
+  </section>
+
+  <section><pre><code class="javascript" data-trim data-noescape>
+  it('creates a product in a category', (done) =&gt; {
+    Category.create({name: 'Food'}, (err, cat) =&gt; {
+      <mark class="fragment">if (err) return done(err);</mark>
+
+      cat.products.create({name: 'Apple'}, (err, prod) =&gt; {
+        <mark class="fragment"> if (err) return done(err);</mark>
+
+        expect(prod).to.have.property('categoryId', cat.id);
+        done();
+      });
+    });
+  });
+  </code></pre></section>
+
+  <section><pre><code class="javascript" data-trim data-noescape>
+  it('creates a product in a category', <mark>async ()</mark> =&gt; {
+    const cat = <mark>await</mark> Category.create({name: 'Food'});
+    const prod = <mark>await</mark> cat.products.create({name: 'Apple'});
+    expect(prod).to.have.property('categoryId', cat.id);
+  });
+  </code></pre></section>
+
+  <section>
+    <h3>Better error stack traces</h3>
+  </section>
+
+  <section>
+    <p>Callbacks
+    <pre><code class="javascript" data-trim>
+    function step(cb) { process.nextTick(cb); }
+
+    function walk(cb) {
+      return step(err => {
+        cb(new Error('too tired'))
+      });
+    }
+
+    /*
+    Error: too tired
+        at step (callback-snippet.js:5:8)
+        at _combinedTickCallback (next_tick.js:131:7)
+    */
+    </code></pre>
+  </section>
+
+  <section>
+    <p>Promises
+    <pre><code class="javascript" data-trim>
+    function step() { return Promise.resolve(); }
+
+    function walk() {
+      return step().then(() => {
+        throw new Error('too tired');
+      });
+    }
+
+    /*
+    Error: too tired
+        at step.then (promise-snippet.js:5:11)
+        at [anonymous]
+        at process._tickCallback (next_tick.js:188:7)
+    */
+    </code></pre>
+  </section>
+
+  <section>
+    <p>Async &amp; await
+    <pre><code class="javascript" data-trim>
+    async function step() {}
+
+    async function walk() {
+      await one();
+      throw new Error('too tired');
+    }
+
+    /*
+    Error: too tired
+        at walk (async-snippet.js:5:9)
+        at [anonymous]
+        at process._tickCallback (next_tick.js:188:7)
+    */
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>The debugger</h3>
+    <ul>
+      <li>F10 steps over await statements
+      <li>Async stack traces show await transitions
+    </ul>
+  </section>
+
+  <section>
+    <h3>Interop with Promises</h3>
+  </section>
+
+  <section>
+    <p><code>await</code> any Promise
+    <pre><code class="javascript" data-trim>
+    function sleep(ms) {
+      return new Promise((resolve, reject) => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    await sleep(100);
+    </code></pre>
+  </section>
+  <section>
+    <p><code>async</code> functions return a promise
+    <pre><code class="javascript" data-trim>
+    async function step() {
+      console.log('raise your foot');
+      await sleep(100);
+      console.log('lower your foot');
+    }
+
+    step().then(() => console.log('done'));
+    </code></pre>
+  </section>
+</section>
+
+
+<section>
+  <section>
+    <h2>Node.js<br/>core API</h2>
+  </section>
+
+  <section
+    data-background-image="./img/giphy-bad-luck.gif"
+    data-background-position="bottom -50px center"
+    >
+  </section>
+
+  <section>
+    <p>(more on this later)</p>
+  </section>
+</section>
+
+<section>
+  <h2>Ecosystem readiness</h2>
+  <p>to be done
+</section>
+
+<section>
+  <section>
+    <h2>Tips, tricks and caveats</h2>
+  </section>
+
+  <section>
+    <h3>Promisify functions</h3>
+    <pre><code class="javascript" data-trim>
+    const util = require('util');
+    const fs = require('fs');
+    const readFile = util.promisify(fs.readFile);
+
+    async function readData() {
+      return await readFile('data.txt', 'utf-8');
+    }
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Promisify classes</h3>
+    <p>you are on your own :(
+    <p><a href="https://www.npmjs.com/package/pify"><code>pify</code></a>
+    <p><a href="http://bluebirdjs.com/docs/api/promise.promisifyall.html">
+      <code>Bluebird.promisifyAll()</code></a>
+  </section>
+
+
+  <section>
+    <h3>Multiple callback arguments</h3>
+  </section>
+
+  <section>
+    <p>Node.js core API
+    <p><mark>TODO</mark>
+  </section>
+
+  <section>
+    <p>3rd party API
+    <p><mark>TODO leverage symbol for custom promisified fn</mark>
+  </section>
+
+
+  <section>
+    <h3>Consume events</h3>
+    <pre><code class="javascript" data-trim>
+    const http = require('http');
+    const pEvent = require('p-event');
+
+    async function start(handler) {
+      const server = http.createServer(handler);
+      server.listen(0);
+
+      await pEvent(server, 'listen');
+      return `http://localhost:${server.address().port}/`;
+    }
+
+    start(/*handler*/).then(
+      url => console.log('Listening on:', url),
+      err => console.log('Cannot start the server:', err)
+    );
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Streams</h3>
+  </section>
+
+  <section>
+    <p>Work in progress
+  </section>
+
+</section>
+
+<section>
+  <section>
+    <h2>Key takeaways</h2>
+  </section>
+  <section>
+    <p>Async functions are here
+    <p>and ready to use
+  </section>
+  <section>
+    <p>Runtime - fully supported
+    <p>Node.js core APIs - no support yet
+    <p>Ecosystem - mostly supported
+  </section>
+  <section>
+    <p>Be aware of what Promise implementations are used by your dependencies.
+  </section>
+</section>
+
+<section>
+<br/>
+<br/>
+<h2>Thank you!</h2>
+<br/>
+<br/>
+<p><em>Miroslav Bajtoš</em>
+<p><a href="https://bajtos.net/">https://bajtos.net/</a>
+</section>
+
+
+
+<!-- ======= SLIDES END ======= -->
+      </div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+
+    <script>
+      // More info about config & dependencies:
+      // - https://github.com/hakimel/reveal.js#configuration
+      // - https://github.com/hakimel/reveal.js#dependencies
+      Reveal.initialize({
+        progress: true,
+        history: true,
+        dependencies: [
+          { src: 'plugin/markdown/marked.js' },
+          { src: 'plugin/markdown/markdown.js' },
+          { src: 'plugin/notes/notes.js', async: true },
+          { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+        ]
+      });
+    </script>
+  </body>
 </html>
