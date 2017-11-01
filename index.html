@@ -230,7 +230,7 @@
     async function step() {}
 
     async function walk() {
-      await one();
+      await step();
       throw new Error('too tired');
     }
 
@@ -454,22 +454,6 @@
   </section>
 
   <section>
-    <h3><code>return await or not?</code></h3>
-    <pre><code class="javascript" data-trim>
-    async function getRepos() {
-      const url = 'https://api.github.com/users/bajtos/repos';
-
-      // return the promise immediately?
-      return request(url);
-
-      // await the result before returning?
-      return await request(url);
-    }
-    </code></pre>
-    <p>both forms are equivalent (AFAICT)
-  </section>
-
-  <section>
     <h3>Async functions in callback-based code</h3>
   </section>
   <section>
@@ -496,12 +480,28 @@
     app.use((req, res, next) => {
       step().then(
         // onFulfilled
-        success => next(),
+        success => process.nextTick(next),
         // onRejected
-        next,
+        error => process.nextTick(next, error)
       );
     });
     </code></pre>
+  </section>
+
+  <section>
+    <h3><code>return await or not?</code></h3>
+    <pre><code class="javascript" data-trim>
+    async function getRepos() {
+      const url = 'https://api.github.com/users/bajtos/repos';
+
+      // return the promise immediately?
+      return request(url);
+
+      // await the result before returning?
+      return await request(url);
+    }
+    </code></pre>
+    <p>both forms are equivalent (AFAICT)
   </section>
 </section>
 
@@ -591,8 +591,13 @@
     <p>workarounds produce "wrong" stack traces
     <p><em>(learn more: <a href="https://www.joyent.com/blog/post-mortem-debugging-and-promises">Post-mortem Debugging and Promises</a>)</em>
   </section>
+</section>
+<section>
   <section>
-    <h3>Performance (micro)</h3>
+    <h2>Performance</h2>
+  </section>
+  <section>
+    <h3>Microbenchmark</h3>
     <canvas data-chart="horizontalBar">
       <!--
         {
@@ -627,7 +632,7 @@
     <p class="note"><a href="https://github.com/strongloop-forks/bluebird/tree/async/await">https://github.com/strongloop-forks/bluebird/tree/async/await</a>
   </section>
   <section>
-    <h3>Performance (macro)</h3>
+    <h3>A "real" app</h3>
     <canvas data-chart="horizontalBar">
       <!--
         {
@@ -656,7 +661,7 @@
   </section>
 
   <section>
-    <h3>Latency</h3>
+    <h3>Time to handle a request</h3>
     <canvas data-chart="horizontalBar">
       <!--
         {
@@ -687,9 +692,9 @@
     <h3>Faster core APIs?</h3>
     <p><a href="https://github.com/nodejs/node/pull/15485">nodejs/node#15485</a>
     <pre><code class="json" data-trim data-noescape>
-    fs/promises-access.js method="legacy" n=200000: <mark>163,294</mark>.66290369138
-    fs/promises-access.js method="promisify" n=200000: <mark>119,130</mark>.69228308211
-    fs/promises-access.js method="promise" n=200000: <mark>185,855</mark>.53426089959
+    fs/promises-access.js method="legacy"    163,294.66290369138
+    fs/promises-access.js method="promisify" 119,130.69228308211
+    fs/promises-access.js method="promise"   185,855.53426089959
     </code></pre>
   </section>
 </section>
@@ -711,6 +716,15 @@
       <a href="https://commons.wikimedia.org/wiki/File%3ABratislava_man_at_work.jpg">via Wikimedia Commons</a>
   </section>
 
+  <section>
+    <ul>
+      <li>reading from streams
+      <li>writing to streams
+      <li>creating Readable streams
+      <li>creating Writable streams
+      <li>creating Transform streams
+    </ul>
+  </section>
   <section>
     <h3>Async Iterators</h3>
   </section>
@@ -744,21 +758,7 @@
     </code></pre>
     <p class="note"><a href="https://github.com/calvinmetcalf/async-iter-stream">https://github.com/calvinmetcalf/async-iter-stream</a>
   </section>
-  <section>
-    <p>Functional style?
-    <p><em>(just dreaming)</em>
-    <pre><code class="javascript" data-trim>
-    await asyncIterStream.wrap(inputStream)
-      .mapAsync(async (line) => {
-        const sentiment = await analyseSentiment(line);
-        return {line, sentiment};
-      })
-      .forEach({line, sentiment} => {
-        console.log(sentiment, line);
-      });
-    });
-    </code></pre>
-  </section>
+  <!--
   <section>
     <h4>Write to streams</h4>
     <p><em>(just dreaming)</em>
@@ -768,9 +768,59 @@
     }
     await dest.end();
     </code></pre>
+    <p>backpressure!
   </section>
   <section>
-    <h4>Important Reminder</h4>
+    <h4>Create Readable streams</h4>
+    <p><em>(just dreaming)</em>
+    <pre><code class="javascript" data-trim data-noescape>
+      new ReadableStream({
+        async * _read() {
+          for (const url of sourceUrls) {
+            yield await fetch(url);
+          }
+        }
+      });
+    </code></pre>
+  </section>
+  <section>
+    <h4>Create Writable streams</h4>
+    <p><em>(just dreaming)</em>
+    <pre><code class="javascript" data-trim data-noescape>
+    new WritableStream({
+      <mark>async write(chunk, encoding)</mark> {
+        //...
+      },
+      <mark>async destroy()</mark> {
+        // ...
+      },
+    });
+    </code></pre>
+    <p>backpressure!
+  </section>
+  <section>
+    <h4>Create Transform streams</h4>
+    <pre><code class="javascript" data-trim data-noescape>
+    new TransformStream({
+      buffer: '';
+      <mark>async *transform(chunk, encoding)</mark> {
+        buffer += chunk;
+        const lines = /*await*/ buffer.split('\n');
+        buffer = lines.pop();
+        for (const l of lines) {
+          yield l;
+        }
+      },
+      <mark>async *flush()</mark> {
+        yield buffer;
+      },
+    });
+    </code></pre>
+    <p>backpressure!
+  </section>
+  -->
+  <section>
+    <h4>And the rest?</h4>
     <p>The exact shape of the new Streams API in Node.js is not determined yet.
   </section>
 </section>
