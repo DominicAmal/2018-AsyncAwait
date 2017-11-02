@@ -80,73 +80,19 @@
   <h2>Agenda</h2>
   <ul>
     <li class="fragment"><code>async</code> and <code>await</code> are awesome!
-    <li class="fragment">status in JavaScript and V8
-    <li class="fragment">support in Node.js core APIs
+    <li class="fragment">implementation status
     <li class="fragment">ecosystem readiness
-    <li class="fragment">tips, tricks and caveats
+    <li class="fragment">tips &amp; tricks
+    <li class="fragment">caveats
   </ul>
 </section>
 
-<section>
-  <section>
-    <h2>ECMAScript &amp; V8</h2>
-    a short history
-  </section>
-  <section>
-    <p>January 2014:
-    <p>TC39 discussion begins
-  </section>
-  <section>
-    <p>October 2015:
-    <p>Stage 3 ("Candidate")
-  </section>
-
-  <section>
-    <p>October 2016:
-    <p>Stage 4 ("Finished")
-  </section>
-
-  <section>
-    <p>January 2017:
-    <p>ES2017
-  </section>
-
-  <section>
-    <p>&nbsp;
-    <p>February 2017:
-    <p>Node.js 7.6.0 (V8 5.5)
-    <p>&nbsp;
-    <p><code>async/await</code> available without any flags
-  </section>
-
-  <section>
-    <p>&nbsp;
-    <p>May 2017:
-    <p>Node.js 8.0.0 (V8 5.8)
-    <p>&nbsp;
-    <p>major speed improvements
-  </section>
-
-  <section>
-    <p>&nbsp;
-    <p>August 2017:
-    <p>Node.js 8.4.0 (V8 6.0)
-    <p>&nbsp;
-    <p><em>Hello TurboFan!</em>
-    <p>(even more speed improvements)
-  </section>
-
-  <section>
-    <p>October 2017:
-    <p>Node.js 8.x enters LTS mode
-    <p><em>(V8 6.1)</em>
-  </section>
-</section>
-
+<!--
 <section>
   <h2>My personal story</h2>
   <p>async, await &amp; LoopBack Next
 </section>
+-->
 
 <section>
   <section>
@@ -180,6 +126,35 @@
     expect(prod).to.have.property('categoryId', cat.id);
   });
   </code></pre></section>
+
+  <section>
+    <h3>Interop with Promises</h3>
+  </section>
+
+  <section>
+    <p><code>await</code> any Promise
+    <pre><code class="javascript" data-trim>
+    function sleep(ms) {
+      return new Promise((resolve, reject) => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    await sleep(100);
+    </code></pre>
+  </section>
+  <section>
+    <p><code>async</code> functions return a promise
+    <pre><code class="javascript" data-trim>
+    async function step() {
+      console.log('raise your foot');
+      await sleep(100);
+      console.log('lower your foot');
+    }
+
+    step().then(() => console.log('done'));
+    </code></pre>
+  </section>
 
   <section>
     <h3>Better error stack traces</h3>
@@ -245,46 +220,29 @@
 
   <section>
     <h3>The debugger</h3>
-    <ul>
-      <li>F10 steps over await statements
-      <li>Async stack traces show await transitions
-    </ul>
-  </section>
-
-  <section>
-    <h3>Interop with Promises</h3>
-  </section>
-
-  <section>
-    <p><code>await</code> any Promise
-    <pre><code class="javascript" data-trim>
-    function sleep(ms) {
-      return new Promise((resolve, reject) => {
-        setTimeout(resolve, ms);
-      });
-    }
-
-    await sleep(100);
-    </code></pre>
-  </section>
-  <section>
-    <p><code>async</code> functions return a promise
-    <pre><code class="javascript" data-trim>
-    async function step() {
-      console.log('raise your foot');
-      await sleep(100);
-      console.log('lower your foot');
-    }
-
-    step().then(() => console.log('done'));
-    </code></pre>
+    <p>F10 steps over await statements
   </section>
 </section>
 
-
 <section>
   <section>
-    <h2>Node.js<br/>core API</h2>
+    <h2>Implementation status</h2>
+  </section>
+
+  <section>
+    <h3>The language</h3>
+    <p>ES2017
+    <p class="note">(January 2017)
+  </section>
+
+  <section>
+    <h3>The runtime</h3>
+    <p>Node.js 8.9.0 LTS
+    <p class="note">(October 2017)
+  </section>
+
+  <section>
+    <h3>Node.js core API</h3>
   </section>
 
   <section
@@ -454,7 +412,7 @@
   </section>
 
   <section>
-    <h3>Async functions in callback-based code</h3>
+    <h3>Async functions in<br/>callback-based code</h3>
   </section>
   <section>
     <p>Can you spot two problems?
@@ -527,6 +485,9 @@
     <h3>User-land Promise libraries</h3>
   </section>
   <section>
+    <p>How to detect unhandled rejections?
+  </section>
+  <section>
     <p><code>async</code> functions return a native promise
     <pre><code class="javascript" data-trim>
     const Bluebird = require('bluebird');
@@ -540,9 +501,6 @@
     console.log('spread' in test());
     // false
     </code></pre>
-  </section>
-  <section>
-    <p>How to detect unhandled rejections?
   </section>
   <section>
     <h3>Invalid API usage<br/>vs.<br/>operational errors</h3>
@@ -579,16 +537,13 @@
     </code></pre>
   </section>
   <section>
-    <h4>await a promisified function</h4>
-    <p>all errors reported as promise rejections
-    <p>the process never crashes
+    <h4>Any error in an async function</h4>
+    <p>always reported as a promise rejection
     <p><em>(discussion: <a href="https://github.com/nodejs/promises/issues/10">nodejs/promises#10</a>)</em>
   </section>
   <section>
     <h3>Post-mortem debugging</h3>
     <p><code>node --abort-on-uncaught-exception</code>
-    <p>does not work with async/await and promises
-    <p>workarounds produce "wrong" stack traces
     <p><em>(learn more: <a href="https://www.joyent.com/blog/post-mortem-debugging-and-promises">Post-mortem Debugging and Promises</a>)</em>
   </section>
 </section>
@@ -661,34 +616,6 @@
   </section>
 
   <section>
-    <h3>Time to handle a request</h3>
-    <canvas data-chart="horizontalBar">
-      <!--
-        {
-          "data": {
-            "labels": ["Hapi(v17)", "Fastify", "Koa+router", "Express"],
-            "datasets": [{
-              "label": "latency in milliseconds",
-              "data": [1.17, 0.98, 1.09, 1.21],
-              "backgroundColor": [
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)"
-              ]
-            }]
-          },
-          "options": {
-            "scales": {
-              "xAxes":[{"ticks":{"beginAtZero":true}}]
-            }
-          }
-        }
-      -->
-    </canvas>
-    <p class="note"><a href="https://github.com/bajtos/async-frameworks">https://github.com/bajtos/async-frameworks</a>
-  </section>
-  <section>
     <h3>Faster core APIs?</h3>
     <p><a href="https://github.com/nodejs/node/pull/15485">nodejs/node#15485</a>
     <pre><code class="json" data-trim data-noescape>
@@ -702,20 +629,10 @@
 <section>
   <section>
     <h2>Streams</h2>
+    <p>(the future)</p>
   </section>
 
-  <section
-    data-background-image="./img/cumil.jpg"
-    data-transition="none"
-    >
-    <p class="attribution">
-      By PMATAS (Own work) [<a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>],
-      <a href="https://commons.wikimedia.org/wiki/File%3ABratislava_bronze_sculpture_2014.jpg">via Wikimedia Commons</a>
-      <br/>
-      By Airin (Own work) [<a href="https://creativecommons.org/licenses/by-sa/1.0">CC BY-SA 1.0</a>],
-      <a href="https://commons.wikimedia.org/wiki/File%3ABratislava_man_at_work.jpg">via Wikimedia Commons</a>
-  </section>
-
+  <!--
   <section>
     <ul>
       <li>reading from streams
@@ -725,8 +642,16 @@
       <li>creating Transform streams
     </ul>
   </section>
+  -->
+
   <section>
     <h3>Async Iterators</h3>
+  </section>
+  <section>
+    <h4>Status</h4>
+    <p><code>node --harmony-async-iteration</code>
+    <p>TC39: stage 3 proposal
+    <p class="note"><a href="https://github.com/tc39/proposal-async-iteration">https://github.com/tc39/proposal-async-iteration</a>
   </section>
   <section>
     <pre><code class="javascript" data-trim>
@@ -734,12 +659,6 @@
       console.log(line);
     }
     </code></pre>
-  </section>
-  <section>
-    <h4>Status</h4>
-    <p><code>node --harmony-async-iteration</code>
-    <p>TC39: stage 3 proposal
-    <p class="note"><a href="https://github.com/tc39/proposal-async-iteration">https://github.com/tc39/proposal-async-iteration</a>
   </section>
   <section>
     <h3>Streams as Async Iterators</h3>
@@ -830,21 +749,15 @@
     <h2>Key takeaways</h2>
   </section>
   <section>
-    Async functions are awesome
+    <p><code>async</code> functions are awesome
+    <p>and ready to use
   </section>
   <section>
-    They are here and ready to use
+    <p>understand the caveats
+    <p class="note">(brought by the new programming model)
   </section>
   <section>
-    <p>Runtime - fully supported
-    <p>Node.js core APIs - workarounds available
-    <p>Ecosystem - mostly supported
-  </section>
-  <section>
-    Understand the caveats
-  </section>
-  <section>
-    <p>Know your dependencies
+    <p>know your dependencies
     <p class="note">(and the Promise libraries they use)
   </section>
 </section>
