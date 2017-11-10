@@ -1,0 +1,5 @@
+explain how to run things in parallel:
+  `await Promise.all[tasks]`
+
+remove Streams
+
