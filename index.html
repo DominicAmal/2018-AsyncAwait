@@ -12,6 +12,8 @@
     <!-- Theme used for syntax highlighting of code -->
     <link rel="stylesheet" href="lib/css/tomorrow.css">
 
+    <link rel="stylesheet" href="plugin/line-numbers/line-numbers.css">
+
     <!-- My own customizations -->
     <style>
       .reveal pre code {
@@ -49,6 +51,11 @@
 
       ul.nodisc {
         list-style-type: none;
+      }
+
+      code span.highlight-line:before {
+        color: #4d4d4c !important;
+        font-weight: bold;
       }
     </style>
 
@@ -162,7 +169,7 @@
 
   <section>
     <p>Callbacks
-    <pre><code class="javascript" data-trim>
+    <pre><code class="javascript line-numbers" data-trim data-highlight-lines="5">
     function step(cb) { process.nextTick(cb); }
 
     function walk(cb) {
@@ -181,7 +188,7 @@
 
   <section>
     <p>Promises
-    <pre><code class="javascript" data-trim>
+    <pre><code class="javascript line-numbers" data-trim data-highlight-lines="5">
     function step() { return Promise.resolve(); }
 
     function walk() {
@@ -201,7 +208,7 @@
 
   <section>
     <p>Async &amp; await
-    <pre><code class="javascript" data-trim>
+    <pre><code class="javascript line-numbers" data-trim data-highlight-lines="5">
     async function step() {}
 
     async function walk() {
@@ -799,6 +806,7 @@
           },
           { src: 'plugin/chart/Chart.min.js' },
           { src: 'plugin/chart/csv2chart.js' },
+          { src: 'plugin/line-numbers/line-numbers.js'},
         ],
       });
     </script>
