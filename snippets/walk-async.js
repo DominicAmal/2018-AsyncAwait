@@ -5,4 +5,4 @@ async function walk() {
   throw new Error('too tired');
 }
 
-walk().then(console.log, console.log);
+walk().catch(err => console.log(err));

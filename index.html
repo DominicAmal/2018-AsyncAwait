@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <title>Native async/await in Node.js</title>
+    <title>Async functions in practice</title>
 
     <link rel="stylesheet" href="css/reveal.css">
     <link rel="stylesheet" href="css/theme/sky.css">
@@ -75,9 +75,11 @@
 
 <section>
   <br/>
-  <br/>
-  <h2>Native async/await<br/>in Node.js</h2>
-  <h3><em>Are we there yet?</em></h3>
+  <h2>Async functions<br/>in practice</h2>
+  <h4><em>
+    tips, tricks and caveats you want to know<br/>
+    before migrating from callbacks
+  </em></h4>
   <br/>
   <br/>
   <div style="text-align: right">Miroslav Bajtoš</div>
@@ -94,12 +96,23 @@
   </ul>
 </section>
 
-<!--
 <section>
   <h2>My personal story</h2>
   <p>async, await &amp; LoopBack Next
+  <!--
+    In January 2017, we started LB Next as a complete rewrite
+    using TypeScript and latest language goodness including async/await.
+
+    At that time, async/await was available in Node.js behind a feature
+    flag and the performance was terrible. And by terrible I mean async/await
+    was about ~6x slower than callbacks. For comparison, in Node.js 10.5.0,
+    async/await is only ~2x slower than callbacks.
+
+    Fast forward 1.5 years and I am happy that my scepticism was overruled
+    by other team members. We are still maintaining our legacy code base
+    from ES5 days and it's so less fun that ES2017!
+  -->
 </section>
--->
 
 <section>
   <section>
@@ -135,35 +148,6 @@
   </code></pre></section>
 
   <section>
-    <h3>Interop with Promises</h3>
-  </section>
-
-  <section>
-    <p><code>await</code> any Promise
-    <pre><code class="javascript" data-trim>
-    function sleep(ms) {
-      return new Promise((resolve, reject) => {
-        setTimeout(resolve, ms);
-      });
-    }
-
-    await sleep(100);
-    </code></pre>
-  </section>
-  <section>
-    <p><code>async</code> functions return a promise
-    <pre><code class="javascript" data-trim>
-    async function step() {
-      console.log('raise your foot');
-      await sleep(100);
-      console.log('lower your foot');
-    }
-
-    step().then(() => console.log('done'));
-    </code></pre>
-  </section>
-
-  <section>
     <h3>Better error stack traces</h3>
   </section>
 
@@ -174,14 +158,14 @@
 
     function walk(cb) {
       return step(err => {
-        cb(new Error('too tired'))
+        cb(new Error('too tired'));
       });
     }
 
     /*
     Error: too tired
-        at step (callback-snippet.js:5:8)
-        at _combinedTickCallback (next_tick.js:131:7)
+        at step (walk-callback.js:5:8)
+        at process._tickCallback (next_tick.js:61:11)
     */
     </code></pre>
   </section>
@@ -199,9 +183,8 @@
 
     /*
     Error: too tired
-        at step.then (promise-snippet.js:5:11)
-        at [anonymous]
-        at process._tickCallback (next_tick.js:188:7)
+        at step.then (walk-promise.js:5:11)
+        at process._tickCallback (next_tick.js:68:7)
     */
     </code></pre>
   </section>
@@ -218,9 +201,8 @@
 
     /*
     Error: too tired
-        at walk (async-snippet.js:5:9)
-        at [anonymous]
-        at process._tickCallback (next_tick.js:188:7)
+        at walk (walk-async.js:5:9)
+        at process._tickCallback (next_tick.js:68:7)
     */
     </code></pre>
   </section>
@@ -325,6 +307,40 @@
 <section>
   <section>
     <h2>Tips &amp; tricks</h2>
+  </section>
+
+  <section>
+    <h3>Interop with Promises</h3>
+  </section>
+
+  <section>
+    <p><code>await</code> any Promise
+    <pre><code class="javascript" data-trim>
+    function sleep(ms) {
+      return new Promise((resolve, reject) => {
+        setTimeout(resolve, ms);
+      });
+    }
+
+    await sleep(100);
+    </code></pre>
+  </section>
+  <section>
+    <p><code>async</code> functions return a promise
+    <pre><code class="javascript" data-trim>
+    async function step() {
+      console.log('raise your foot');
+      await sleep(100);
+      console.log('lower your foot');
+    }
+
+    step().then(() => console.log('done'));
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Run tasks in parallel</h3>
+    <p>TBD: <code>await Promise.all(tasks)</code>
   </section>
 
   <section>
@@ -484,7 +500,7 @@
     // missing await or then
     tick();
     </code></pre>
-    <p>does not crash the process
+    <p>does not crash the process (yet)
     <p><a href="https://nodejs.org/dist/latest-v8.x/docs/api/process.html#process_event_unhandledrejection">
       <code>process.on('unhandledRejection')</code></a>
   </section>

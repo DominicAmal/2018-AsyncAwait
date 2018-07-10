@@ -6,4 +6,4 @@ function walk() {
   });
 }
 
-walk().then(console.log, console.log);
+walk().catch(err => console.log(err));
