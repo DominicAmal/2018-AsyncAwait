@@ -153,12 +153,12 @@
 
   <section>
     <p>Callbacks
-    <pre><code class="javascript line-numbers" data-trim data-highlight-lines="5">
+    <pre><code class="javascript line-numbers" data-trim data-noescape data-highlight-lines="5">
     function step(cb) { process.nextTick(cb); }
 
     function walk(cb) {
-      return step(err => {
-        cb(new Error('too tired'));
+      return step(err =&gt; {
+        <mark>cb(new Error('too tired'));</mark>
       });
     }
 
@@ -172,12 +172,12 @@
 
   <section>
     <p>Promises
-    <pre><code class="javascript line-numbers" data-trim data-highlight-lines="5">
+    <pre><code class="javascript line-numbers" data-trim data-noescape data-highlight-lines="5">
     function step() { return Promise.resolve(); }
 
     function walk() {
-      return step().then(() => {
-        throw new Error('too tired');
+      return step().then(() =&gt; {
+        <mark>throw new Error('too tired');</mark>
       });
     }
 
@@ -191,12 +191,12 @@
 
   <section>
     <p>Async &amp; await
-    <pre><code class="javascript line-numbers" data-trim data-highlight-lines="5">
+    <pre><code class="javascript line-numbers" data-trim data-noescape data-highlight-lines="5">
     async function step() {}
 
     async function walk() {
       await step();
-      throw new Error('too tired');
+      <mark>throw new Error('too tired');</mark>
     }
 
     /*
@@ -232,17 +232,27 @@
 
   <section>
     <h3>Node.js core API</h3>
-  </section>
-
-  <section
-    data-background-image="./img/giphy-bad-luck.gif"
-    data-background-position="bottom -50px center"
-    >
+    <img
+         src="./img/under-construction.png"
+         alt="work in progres"
+         style="border:none; background: none; box-shadow: none;"
+         height="150"
+    />
+    <p><em>(see <a
+       href="https://github.com/nodejs/node/issues/15413">nodejs/node#15413)</a></em>
   </section>
 
   <section>
-    <p>see <a href="https://github.com/nodejs/node/issues/15413">nodejs/node#15413</a>
+    <h3>Node.js&nbsp;&nbsp;8&nbsp;&nbsp;(LTS)</h3>
+    <p><code>util.promisify()</code></p>
     <p>(more on this later)</p>
+  </section>
+  <section>
+    <h3>Node.js&nbsp;&nbsp;10</h3>
+    <p><code>require('fs').promises</code></p>
+    <br/>
+    <h4>Experimental:</h4>
+    <p><code>require('dns').promises</code></p>
   </section>
 </section>
 
@@ -268,7 +278,7 @@
       <li class="notok"><a href="https://www.npmjs.com/package/express">Express</a>
         <span class="note">(but see <a href="https://www.npmjs.com/package/express-promise-router">express-promise-router</a></span>)
       <li class="ok"><a href="https://www.npmjs.com/package/loopback">LoopBack</a>
-        <span class="note">(the REST API layer)</span>
+        <span class="note">(REST API layer)</span>
       <li class="ok"><a href="https://www.npmjs.com/package/hapi">Hapi</a>
       <li class="ok"><a href="https://www.npmjs.com/package/koa">Koa</a>
       <li class="ok"><a href="https://www.npmjs.com/package/fastify">Fastify</a>
@@ -282,7 +292,7 @@
     <h3>ORMs</h3>
     <ul class="nodisc">
       <li class="ok"><a href="https://www.npmjs.com/package/loopback">LoopBack</a>
-        <span class ="note">(the ORM layer)</span>
+        <span class ="note">(ORM layer)</span>
       <li class="ok"><a href="https://www.npmjs.com/package/knex">Knex</a>
       <li class="ok"><a href="https://www.npmjs.com/package/bookshelf">Bookshelf</a>
       <li class="ok"><a href="https://www.npmjs.com/package/sequelize">Sequelize</a>
@@ -340,7 +350,16 @@
 
   <section>
     <h3>Run tasks in parallel</h3>
-    <p>TBD: <code>await Promise.all(tasks)</code>
+    <!--
+      `await` runs tasks in series
+      use `Promise.all` for parallel execution
+    -->
+    <pre><code class="javascript" data-trim>
+    await Promise.all([
+      walk(),
+      talk(),
+    ]);
+    </code></pre>
   </section>
 
   <section>
@@ -359,6 +378,8 @@
   <section>
     <h3>Promisify classes</h3>
     <p>you are on your own :(
+    <p><a href="https://www.npmjs.com/package/pifall">
+      <code>pifall</code></a>
     <p><a href="https://www.npmjs.com/package/pify">
       <code>pify</code></a>
     <p><a href="http://bluebirdjs.com/docs/api/promise.promisifyall.html">
@@ -475,40 +496,22 @@
     async function getRepos() {
       const url = 'https://api.github.com/users/bajtos/repos';
 
-      // return the promise immediately?
+      // GOOD: return the promise immediately
       return request(url);
 
-      // await the result before returning?
+      // NOT RECOMMENDED: await the result before returning
       return await request(url);
     }
     </code></pre>
-    <p>both forms are equivalent (AFAICT)
+    <p>avoid <a
+      href="http://exploringjs.com/es2016-es2017/ch_async-functions.html#_returned-promises-are-not-wrapped">promise
+      rewrapping</a>
   </section>
 </section>
 
 <section>
   <section>
     <h2>Caveats</h2>
-  </section>
-  <section>
-    <h3>Unhandled errors</h3>
-    <pre><code class="javascript" data-trim>
-    async function tick() {
-      throw new Error('BOOM!');
-    }
-
-    // missing await or then
-    tick();
-    </code></pre>
-    <p>does not crash the process (yet)
-    <p><a href="https://nodejs.org/dist/latest-v8.x/docs/api/process.html#process_event_unhandledrejection">
-      <code>process.on('unhandledRejection')</code></a>
-  </section>
-  <section>
-    <h3>User-land Promise libraries</h3>
-  </section>
-  <section>
-    <p>How to detect unhandled rejections?
   </section>
   <section>
     <p><code>async</code> functions return a native promise
@@ -524,6 +527,26 @@
     console.log('spread' in test());
     // false
     </code></pre>
+  </section>
+  <section>
+    <h3>Unhandled errors</h3>
+    <pre><code class="javascript" data-trim>
+    async function tick() {
+      throw new Error('BOOM!');
+    }
+
+    // missing await or then
+    tick();
+    </code></pre>
+    <p>logs a warning, does not crash (yet)
+    <p><a href="https://nodejs.org/dist/latest-v8.x/docs/api/process.html#process_event_unhandledrejection">
+      <code>process.on('unhandledRejection')</code></a>
+  </section>
+  <section>
+    <h3>User-land Promise libraries</h3>
+  </section>
+  <section>
+    <p>How to detect unhandled rejections?
   </section>
   <section>
     <h3>Invalid API usage<br/>vs.<br/>operational errors</h3>
@@ -589,7 +612,7 @@
             ],
             "datasets": [{
               "label": "time to complete (ms)",
-              "data": [135, 277, 377, 476, 513],
+              "data": [161, 273, 259, 341, 330],
               "backgroundColor": [
                 "rgba(54, 162, 235, 0.6)",
                 "rgba(54, 162, 235, 0.6)",
@@ -615,10 +638,10 @@
       <!--
         {
           "data": {
-            "labels": ["Hapi(v17)", "Fastify", "Koa+router", "Express"],
+            "labels": ["Hapi", "Fastify", "Koa+router", "Express"],
             "datasets": [{
               "label": "requests per second",
-              "data": [6200, 7800, 7300, 6100],
+              "data": [5875, 7905, 7269, 5610],
               "backgroundColor": [
                 "rgba(54, 162, 235, 0.6)",
                 "rgba(54, 162, 235, 0.6)",

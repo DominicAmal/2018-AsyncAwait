@@ -1,18 +1,5 @@
-update implementatation status
- - check libraries that did not support promises yet
- - check the status of Node.js core APIs, mention fs.promises
-
-promisify classes - is there anything in core yet?
-multiple callback args - any news?
-
-error handling in promises
-
 update streams
  - ReadableStream is async iterable in Node.js 10.x
  - what's the status of writable streams?
 
-update benchmark for Node.js 10.x
-
 benchmark new promise-based fs API (Node.js 10.x)
-
-
