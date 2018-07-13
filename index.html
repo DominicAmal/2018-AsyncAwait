@@ -701,7 +701,6 @@
 <section>
   <section>
     <h2>Streams</h2>
-    <p>(the future)</p>
   </section>
 
   <!--
@@ -717,37 +716,31 @@
   -->
 
   <section>
-    <h3>Async Iterators</h3>
-  </section>
-  <section>
-    <h4>Status</h4>
-    <p><code>node --harmony-async-iteration</code>
-    <p>TC39: stage 3 proposal
-    <p class="note"><a href="https://github.com/tc39/proposal-async-iteration">https://github.com/tc39/proposal-async-iteration</a>
-  </section>
-  <section>
+    <h3>Pipelines</h3>
     <pre><code class="javascript" data-trim>
-    for await (const line of readLines(filePath)) {
-      console.log(line);
-    }
+    const pipeline = util.promisify(stream.pipeline);
+
+    await pipeline(
+      fs.createReadStream('archive.tar'),
+      zlib.createGzip(),
+      fs.createWriteStream('archive.tar.gz')
+    );
     </code></pre>
+    <p class="note">(requires Node.js 10.x)
   </section>
+
   <section>
     <h3>Streams as Async Iterators</h3>
-    <p class="note">(inspired by <a href="https://streams.spec.whatwg.org/">WhatWG Streams</a>)
-  </section>
-  <section>
-    <h4>Read from streams</h4>
     <pre><code class="javascript" data-trim data-noescape>
-    const inputStream = byline(fs.createReadStream(
-      pathToFile, {encoding: 'utf-8'})));
+    const input = byline(
+      fs.createReadStream(pathToFile, {encoding: 'utf-8'}))
+    );
 
-    const reader = <mark>asyncIterStream.wrap(inputStream);</mark>
-    for await (const line of reader) {
+    for await (const line of input) {
       console.log(line);
     }
     </code></pre>
-    <p class="note"><a href="https://github.com/calvinmetcalf/async-iter-stream">https://github.com/calvinmetcalf/async-iter-stream</a>
+    <p class="note">(requires Node.js 10.x)
   </section>
   <!--
   <section>

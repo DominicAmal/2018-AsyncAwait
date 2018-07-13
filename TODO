@@ -1,5 +1,0 @@
-update streams
- - ReadableStream is async iterable in Node.js 10.x
- - what's the status of writable streams?
-
-benchmark new promise-based fs API (Node.js 10.x)
