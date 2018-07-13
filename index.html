@@ -249,9 +249,8 @@
   </section>
   <section>
     <h3>Node.js&nbsp;&nbsp;10</h3>
+    <p><em>Experimental API</em></p>
     <p><code>require('fs').promises</code></p>
-    <br/>
-    <h4>Experimental:</h4>
     <p><code>require('dns').promises</code></p>
   </section>
 </section>
@@ -611,14 +610,14 @@
               "await util.promisify"
             ],
             "datasets": [{
-              "label": "time to complete (ms)",
+              "label": "time to complete (ms) - smaller is better",
               "data": [161, 273, 259, 341, 330],
               "backgroundColor": [
                 "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)"
+                "rgba(183, 128, 162, 0.6)",
+                "rgba(162, 183, 128, 0.6)",
+                "rgba(183, 128, 162, 0.6)",
+                "rgba(162, 183, 128, 0.6)"
               ]
             }]
           },
@@ -632,6 +631,43 @@
     </canvas>
     <p class="note"><a href="https://github.com/strongloop-forks/bluebird/tree/async/await">https://github.com/strongloop-forks/bluebird/tree/async/await</a>
   </section>
+
+  <section>
+    <h3>Promisified core APIs</h3>
+    <canvas data-chart="horizontalBar">
+      <!--
+        {
+          "data": {
+            "labels": [
+              "fstat (callback)",
+              "fstat (fs.promise)",
+              "lstat (callback)",
+              "lstat (fs.promise)",
+              "stat (callback)",
+              "stat (fs.promise)"
+            ],
+            "datasets": [{
+              "label": "time to complete (ms) - smaller is better",
+              "data": [0.315, 0.295, 0.272, 0.256, 0.262, 0.253],
+              "backgroundColor": [
+                "rgba(54, 162, 235, 0.6)",
+                "rgba(162, 183, 128, 0.6)",
+                "rgba(54, 162, 235, 0.6)",
+                "rgba(162, 183, 128, 0.6)",
+                "rgba(54, 162, 235, 0.6)",
+                "rgba(162, 183, 128, 0.6)"
+              ]
+            }]
+          },
+          "options": {
+            "scales": {
+              "xAxes":[{"ticks":{"beginAtZero":true}}]
+            }
+          }
+        }
+      -->
+    </canvas>
+  </section>
   <section>
     <h3>A "real" app</h3>
     <canvas data-chart="horizontalBar">
@@ -640,12 +676,12 @@
           "data": {
             "labels": ["Hapi", "Fastify", "Koa+router", "Express"],
             "datasets": [{
-              "label": "requests per second",
+              "label": "requests per second - higher is better",
               "data": [5875, 7905, 7269, 5610],
               "backgroundColor": [
+                "rgba(162, 183, 128, 0.6)",
                 "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
+                "rgba(162, 183, 128, 0.6)",
                 "rgba(54, 162, 235, 0.6)"
               ]
             }]
@@ -659,16 +695,6 @@
       -->
     </canvas>
     <p class="note"><a href="https://github.com/bajtos/async-frameworks">https://github.com/bajtos/async-frameworks</a>
-  </section>
-
-  <section>
-    <h3>Faster core APIs?</h3>
-    <p><a href="https://github.com/nodejs/node/pull/15485">nodejs/node#15485</a>
-    <pre><code class="json" data-trim data-noescape>
-    fs/promises-access.js method="legacy"    163,294.66290369138
-    fs/promises-access.js method="promisify" 119,130.69228308211
-    fs/promises-access.js method="promise"   185,855.53426089959
-    </code></pre>
   </section>
 </section>
 
