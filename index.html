@@ -20,7 +20,7 @@
         padding: 1em;
       }
       .reveal mark {
-        background-color: #ffaaaa;
+        background-color: #ffcccc;
       }
       .reveal li {
         margin: 0.5em 0;
@@ -57,6 +57,10 @@
         color: #4d4d4c !important;
         font-weight: bold;
       }
+
+      code.nohighlight {
+        background-color: white;
+      }
     </style>
 
     <!-- Printing and PDF exports -->
@@ -85,33 +89,48 @@
   <div style="text-align: right">Miroslav Bajtoš</div>
 </section>
 
+  <!--
+    My personal story.
+
+    I started developing on Node.js platform when I joined StrongLoop
+    in 2013, shortly after Node.js 0.10 was released and Node.js was all
+    about callbacks and streams. ES6 was many years away, Promises were
+    considered almost as a heresy and async/await was not even conceived
+    (for JavaScript). The programming model wasn't great - it required
+    a lot of ceremonies and made it easy to introduce subtle bugs,
+    but over time I sort of got used to it.
+
+    As ES6 was solidifying and work began on the future versions, people
+    started to search for even better primitives for flow control.
+    Around 2014, generator functions were the new star, I still remember
+    a talk from NodeSummit 2014 where they explained how to implement
+    async/await using generators. Crazy stuff!
+
+    Now in LoopBack, we made a decision in January 2017 to rewrite the framework
+    from scratch using TypeScript and latest language goodness including
+    async/await.
+
+    At that time, async/await was available in Node.js behind a feature
+    flag and the performance was terrible. And by terrible I mean async/await
+    was about ~6x slower than callbacks. I was not happy about that
+    and wanted to better understand pros and cons of the new programming
+    model. In the past two years, I was closely watching evolution of async
+    functions and at the same time gaining hands-on experience by writing
+    our new framework version using async/await.
+
+    Today I am happy that my scepticism was overruled by other team members
+    and our new codebase is using async functions everywhere. We are still
+    maintaining our legacy code base from ES5 days and it's so less fun than
+    ES2017!
+  -->
+
 <section>
   <h2>Agenda</h2>
   <ul>
     <li class="fragment"><code>async</code> and <code>await</code> are awesome!
-    <li class="fragment">implementation status
-    <li class="fragment">ecosystem readiness
-    <li class="fragment">tips &amp; tricks
-    <li class="fragment">caveats
+    <li class="fragment">runtime &amp; ecosystem readiness
+    <li class="fragment">tips, tricks and caveats
   </ul>
-</section>
-
-<section>
-  <h2>My personal story</h2>
-  <p>async, await &amp; LoopBack Next
-  <!--
-    In January 2017, we started LB Next as a complete rewrite
-    using TypeScript and latest language goodness including async/await.
-
-    At that time, async/await was available in Node.js behind a feature
-    flag and the performance was terrible. And by terrible I mean async/await
-    was about ~6x slower than callbacks. For comparison, in Node.js 10.5.0,
-    async/await is only ~2x slower than callbacks.
-
-    Fast forward 1.5 years and I am happy that my scepticism was overruled
-    by other team members. We are still maintaining our legacy code base
-    from ES5 days and it's so less fun that ES2017!
-  -->
 </section>
 
 <section>
@@ -121,9 +140,53 @@
   </section>
 
   <section>
+    <h3>Definition</h3>
+    <p style="font-size: 0.8em">
+    <div>An <em>async function</em> can contain an <em>await expression</em></div>
+    <div class="fragment">that pauses the execution of the async function</div>
+    <div class="fragment">and waits for the passed Promise's resolution,</div>
+    <div class="fragment">and then resumes the async function's execution</div>
+    <div class="fragment">and returns the resolved value.</div>
+    <p class="note" style="text-align: right; padding-top: 2em">Source: <a
+       href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function">Mozilla web docs</a>
+  </section>
+
+  <section>
+    <h3>Example</h3>
+    <p>Async function
+    <pre><code class="javascript line-numbers" data-trim data-noescape>
+      async function run(){
+        const response = await request('http://example.com/');
+        console.log(response);
+      }
+    </code></pre>
+    <div class="fragment">
+    <p>Callbacks
+    <pre><code class="javascript line-numbers" data-trim>
+      function run(callback){
+        request('http://example.com/', (error, response) => {
+          if (error) return callback(error);
+          console.log(response);
+          callback();
+        });
+      }
+    </code></pre>
+    </div>
+  </section>
+
+  <section>
     <h3>Cleaner code</h3>
   </section>
 
+  <!--
+    PROBLEM: people forget to add code to handle errors,
+    the algorithm runs as if all was good and crashed later
+    with an error difficult to understand (often on access to "undefined")
+
+    Nested function and callback hell/Christmas tree.
+
+    Our legacy codebase is full of code like this.
+  -->
   <section><pre><code class="javascript" data-trim data-noescape>
   it('creates a product in a category', (done) =&gt; {
     Category.create({name: 'Food'}, (err, cat) =&gt; {
@@ -139,6 +202,9 @@
   });
   </code></pre></section>
 
+  <!--
+    SOLUTION: await enables imperative/sync-like code and propagates errors
+  -->
   <section><pre><code class="javascript" data-trim data-noescape>
   it('creates a product in a category', <mark>async ()</mark> =&gt; {
     const cat = <mark>await</mark> Category.create({name: 'Food'});
@@ -147,6 +213,41 @@
   });
   </code></pre></section>
 
+  <!-- PROBLEM: how to interact with existing code (callbacks/promises)? -->
+  <section>
+    <h3>It works great with Promises!</h3>
+  </section>
+
+  <section>
+    <h3>Consume Promises</h3>
+    <pre><code class="javascript" data-trim data-noescape>
+    function sleep(ms) {
+      return new Promise((resolve, reject) => {
+        setTimeout(resolve, ms);
+      });
+    }
+    </code></pre>
+    <pre class="fragment"><code class="javascript" data-trim data-noescape>
+    await sleep(100);
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Produce Promises</h3>
+    <pre><code class="javascript" data-trim data-noescape>
+    async function step() {
+      console.log('raise your foot');
+      await sleep(100);
+      console.log('lower your foot');
+      return 'made a step';
+    }
+    </code></pre>
+    <pre class="fragment"><code class="javascript" data-trim data-noescape>
+    step().then(result => console.log(result));
+    </code></pre>
+  </section>
+
+  <!-- A PERK: troubleshooting is so much easier -->
   <section>
     <h3>Better error stack traces</h3>
   </section>
@@ -158,15 +259,14 @@
 
     function walk(cb) {
       return step(err =&gt; {
-        <mark>cb(new Error('too tired'));</mark>
+        cb(new Error('too tired'));
       });
     }
-
-    /*
+    </code></pre>
+    <pre class="fragment"><code class="nohighlight" data-trim data-noescape>
     Error: too tired
-        at step (walk-callback.js:5:8)
+        <mark>at step</mark> (walk-callback.js:5:8)
         at process._tickCallback (next_tick.js:61:11)
-    */
     </code></pre>
   </section>
 
@@ -177,15 +277,14 @@
 
     function walk() {
       return step().then(() =&gt; {
-        <mark>throw new Error('too tired');</mark>
+        throw new Error('too tired');
       });
     }
-
-    /*
+    </code></pre>
+    <pre class="fragment"><code class="nohighlight" data-trim data-noescape>
     Error: too tired
-        at step.then (walk-promise.js:5:11)
+        <mark>at step.then</mark> (walk-promise.js:5:11)
         at process._tickCallback (next_tick.js:68:7)
-    */
     </code></pre>
   </section>
 
@@ -196,14 +295,13 @@
 
     async function walk() {
       await step();
-      <mark>throw new Error('too tired');</mark>
+      throw new Error('too tired');
     }
-
-    /*
+    </code></pre>
+    <pre class="fragment"><code class="nohighlight" data-trim data-noescape>
     Error: too tired
-        at walk (walk-async.js:5:9)
+        <mark>at walk</mark> (walk-async.js:5:9)
         at process._tickCallback (next_tick.js:68:7)
-    */
     </code></pre>
   </section>
 
@@ -212,6 +310,8 @@
     <p>F10 steps over await statements
   </section>
 </section>
+
+<!-- OK, async/await is so promising. But is ready for use? -->
 
 <section>
   <section>
@@ -244,7 +344,9 @@
 
   <section>
     <h3>Node.js&nbsp;&nbsp;8&nbsp;&nbsp;(LTS)</h3>
+    <br/>
     <p><code>util.promisify()</code></p>
+    <br/>
     <p>(more on this later)</p>
   </section>
   <section>
@@ -255,20 +357,16 @@
   </section>
 </section>
 
+<!--
+  Most people don't use low-level core APIs but use higher-level libraries
+  and frameworks. I am developing LoopBack, a framework for building API
+  servers connecting to backend data sources. For me, it's important
+  to write HTTP server, connect to HTTP services and different SQL/NoSQL
+  databases. Let's take a look at how easy it is to use async/await there.
+-->
 <section>
   <section>
     <h2>Ecosystem readiness</h2>
-  </section>
-
-  <section>
-    <h3>HTTP clients</h3>
-    <ul class="nodisc">
-      <li class="notok"><a href="https://www.npmjs.com/package/request">request</a>
-        <span class="note">(but see <a href="https://www.npmjs.com/package/request-promise-native">request-promise-native</a>)</span>
-      <li class="ok"><a href="https://www.npmjs.com/package/superagent">superagent</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/node-fetch">node-fetch</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/swagger-client">swagger-client</a>
-    </ul>
   </section>
 
   <section>
@@ -284,6 +382,18 @@
         <span class="note">(routes are async, middleware is callback-based.)</span>
       <li class="notok"><a href="https://www.npmjs.com/package/restify">Restify</a>
         <span class="note">(but see <a href="https://www.npmjs.com/package/restify-await-promise">restify-await-promise</a></span>)
+    </ul>
+  </section>
+
+
+  <section>
+    <h3>HTTP clients</h3>
+    <ul class="nodisc">
+      <li class="notok"><a href="https://www.npmjs.com/package/request">request</a>
+        <span class="note">(but see <a href="https://www.npmjs.com/package/request-promise-native">request-promise-native</a>)</span>
+      <li class="ok"><a href="https://www.npmjs.com/package/superagent">superagent</a>
+      <li class="ok"><a href="https://www.npmjs.com/package/node-fetch">node-fetch</a>
+      <li class="ok"><a href="https://www.npmjs.com/package/swagger-client">swagger-client</a>
     </ul>
   </section>
 
@@ -313,38 +423,157 @@
   </section>
 </section>
 
+<!--
+  Functional parity and ease of use would not be enough if the performance
+  was terrible. Let's talk about performance for a bit.
+-->
+
+<section>
+  <section>
+    <h2>Performance</h2>
+    <!--
+    Bluebird has demonstrated that Promises can be fast,
+      the V8 team has made a ton of work to speed up the built-in Promise
+      implementation, and async/await enabled advanced optimizations that
+      were not possible for callbacks or pure Promises. Where are we today?
+    -->
+  </section>
+
+  <section>
+    <h3>Microbenchmark</h3>
+    <!--
+      This is a slightly modified Doxbee benchmark from Bluebird.
+      Critics say the benchmark is too biased towards making Bluebird look
+      good, but I think every benchmark is biased and this one is good enough
+      to get a basic comparison.
+    -->
+    <canvas data-chart="horizontalBar">
+      <!--
+        {
+          "data": {
+            "labels": [
+              "callbacks",
+              "Bluebird",
+              "await Bluebird",
+              "util.promisify",
+              "await util.promisify"
+            ],
+            "datasets": [{
+              "label": "time to complete (ms) - smaller is better",
+              "data": [161, 273, 259, 341, 330],
+              "backgroundColor": [
+                "rgba(54, 162, 235, 0.6)",
+                "rgba(183, 128, 162, 0.6)",
+                "rgba(162, 183, 128, 0.6)",
+                "rgba(183, 128, 162, 0.6)",
+                "rgba(162, 183, 128, 0.6)"
+              ]
+            }]
+          },
+          "options": {
+            "scales": {
+              "xAxes":[{"ticks":{"beginAtZero":true}}]
+            }
+          }
+        }
+      -->
+    </canvas>
+    <p class="note"><a href="https://github.com/strongloop-forks/bluebird/tree/async/await">https://github.com/strongloop-forks/bluebird/tree/async/await</a>
+  </section>
+
+  <!--
+    This benchmark is using `util.promisify` to convert core APIs to
+    promise-enabled functions. I mentioned that Node.js 10.x is bringing
+    experimental implementation of Promise-compatible APIs. Can they
+    perform any better?
+  -->
+
+  <section>
+    <h3>Promisified core APIs</h3>
+    <canvas data-chart="horizontalBar">
+      <!--
+        {
+          "data": {
+            "labels": [
+              "fstat (callback)",
+              "fstat (fs.promise)",
+              "lstat (callback)",
+              "lstat (fs.promise)",
+              "stat (callback)",
+              "stat (fs.promise)"
+            ],
+            "datasets": [{
+              "label": "time to complete (ms) - smaller is better",
+              "data": [0.315, 0.295, 0.272, 0.256, 0.262, 0.253],
+              "backgroundColor": [
+                "rgba(54, 162, 235, 0.6)",
+                "rgba(162, 183, 128, 0.6)",
+                "rgba(54, 162, 235, 0.6)",
+                "rgba(162, 183, 128, 0.6)",
+                "rgba(54, 162, 235, 0.6)",
+                "rgba(162, 183, 128, 0.6)"
+              ]
+            }]
+          },
+          "options": {
+            "scales": {
+              "xAxes":[{"ticks":{"beginAtZero":true}}]
+            }
+          }
+        }
+      -->
+    </canvas>
+  </section>
+
+  <!--
+    Let's face the truth - microbenchmarks are of limited use to application
+    developers, because most bottlenecks are not caused because of flow control
+    style. To get a more realistic numbers, I created a simple HTTP server
+    fetching few records from a MongoDB database and compared performance
+    of different server frameworks.
+  -->
+  <section>
+    <h3>A "real" app</h3>
+    <!--
+      It turns out that callback-based Express is the slowest one
+      and async/await based Koa is less than 10% slower that Fastify.
+    -->
+    <canvas data-chart="horizontalBar">
+      <!--
+        {
+          "data": {
+            "labels": ["Hapi", "Fastify", "Koa+router", "Express"],
+            "datasets": [{
+              "label": "requests per second - higher is better",
+              "data": [5875, 7905, 7269, 5610],
+              "backgroundColor": [
+                "rgba(162, 183, 128, 0.6)",
+                "rgba(54, 162, 235, 0.6)",
+                "rgba(162, 183, 128, 0.6)",
+                "rgba(54, 162, 235, 0.6)"
+              ]
+            }]
+          },
+          "options": {
+            "scales": {
+              "xAxes":[{"ticks":{"beginAtZero":true}}]
+            }
+          }
+        }
+      -->
+    </canvas>
+    <p class="note"><a href="https://github.com/bajtos/async-frameworks">https://github.com/bajtos/async-frameworks</a>
+  </section>
+</section>
+
+<!--
+  Now that I have hopefully convinced you that async/await is great and
+  ready for use, let's look at practical aspects of writing async functions.
+-->
+
 <section>
   <section>
     <h2>Tips &amp; tricks</h2>
-  </section>
-
-  <section>
-    <h3>Interop with Promises</h3>
-  </section>
-
-  <section>
-    <p><code>await</code> any Promise
-    <pre><code class="javascript" data-trim>
-    function sleep(ms) {
-      return new Promise((resolve, reject) => {
-        setTimeout(resolve, ms);
-      });
-    }
-
-    await sleep(100);
-    </code></pre>
-  </section>
-  <section>
-    <p><code>async</code> functions return a promise
-    <pre><code class="javascript" data-trim>
-    async function step() {
-      console.log('raise your foot');
-      await sleep(100);
-      console.log('lower your foot');
-    }
-
-    step().then(() => console.log('done'));
-    </code></pre>
   </section>
 
   <section>
@@ -354,10 +583,31 @@
       use `Promise.all` for parallel execution
     -->
     <pre><code class="javascript" data-trim>
-    await Promise.all([
+    const [walkResult, talkResult] = await Promise.all([
       walk(),
       talk(),
     ]);
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Await events</h3>
+    <pre><code class="javascript" data-trim data-noescape>
+    const http = require('http');
+    <mark>const pEvent = require('p-event');</mark>
+
+    async function start(handler) {
+      const server = http.createServer(handler);
+      server.listen(0);
+
+      <mark>await pEvent(server, 'listen');</mark>
+      return `http://localhost:${server.address().port}/`;
+    }
+
+    start(/*handler*/).then(
+      url =&gt; console.log('Listening on:', url),
+      <mark>err =&gt; console.log('Cannot start the server:', err)</mark>
+    );
     </code></pre>
   </section>
 
@@ -434,27 +684,6 @@
   </section>
 
   <section>
-    <h3>Await events</h3>
-    <pre><code class="javascript" data-trim data-noescape>
-    const http = require('http');
-    <mark>const pEvent = require('p-event');</mark>
-
-    async function start(handler) {
-      const server = http.createServer(handler);
-      server.listen(0);
-
-      <mark>await pEvent(server, 'listen');</mark>
-      return `http://localhost:${server.address().port}/`;
-    }
-
-    start(/*handler*/).then(
-      url =&gt; console.log('Listening on:', url),
-      <mark>err =&gt; console.log('Cannot start the server:', err)</mark>
-    );
-    </code></pre>
-  </section>
-
-  <section>
     <h3>Async functions in<br/>callback-based code</h3>
   </section>
   <section>
@@ -490,6 +719,56 @@
   </section>
 
   <section>
+    <h3>Stream Pipelines</h3>
+    <pre><code class="javascript" data-trim>
+    const pipeline = util.promisify(stream.pipeline);
+
+    await pipeline(
+      fs.createReadStream('archive.tar'),
+      zlib.createGzip(),
+      fs.createWriteStream('archive.tar.gz')
+    );
+    </code></pre>
+    <p class="note">(requires Node.js 10.x)
+  </section>
+
+  <section>
+    <h3>Streams as Async Iterators</h3>
+    <pre><code class="javascript" data-trim data-noescape>
+    const input = byline(
+      fs.createReadStream(pathToFile, {encoding: 'utf-8'}))
+    );
+
+    for await (const line of input) {
+      console.log(line);
+    }
+    </code></pre>
+    <p class="note">(requires Node.js 10.x)
+  </section>
+</section>
+
+<section>
+  <section>
+    <h2>Caveats</h2>
+  </section>
+  <section>
+    <p><code>async</code> functions return a native promise
+    <pre><code class="javascript" data-trim data-noescape>
+    const Bluebird = require('bluebird');
+    async function test() {
+      return Bluebird.resolve(1);
+    }
+
+    <span class="fragment">console.log(test() instanceof Bluebird)</span>
+    <span class="fragment">// false</span>
+
+    <span class="fragment">
+    console.log('spread' in test());
+    // false
+    </span>
+    </code></pre>
+  </section>
+  <section>
     <h3><code>return await or not?</code></h3>
     <pre><code class="javascript" data-trim>
     async function getRepos() {
@@ -506,27 +785,6 @@
       href="http://exploringjs.com/es2016-es2017/ch_async-functions.html#_returned-promises-are-not-wrapped">promise
       rewrapping</a>
   </section>
-</section>
-
-<section>
-  <section>
-    <h2>Caveats</h2>
-  </section>
-  <section>
-    <p><code>async</code> functions return a native promise
-    <pre><code class="javascript" data-trim>
-    const Bluebird = require('bluebird');
-    async function test() {
-      return Bluebird.resolve(1);
-    }
-
-    console.log(test() instanceof Bluebird)
-    // false
-
-    console.log('spread' in test());
-    // false
-    </code></pre>
-  </section>
   <section>
     <h3>Unhandled errors</h3>
     <pre><code class="javascript" data-trim>
@@ -537,9 +795,11 @@
     // missing await or then
     tick();
     </code></pre>
+    <div class="fragment">
     <p>logs a warning, does not crash (yet)
     <p><a href="https://nodejs.org/dist/latest-v8.x/docs/api/process.html#process_event_unhandledrejection">
       <code>process.on('unhandledRejection')</code></a>
+    </div>
   </section>
   <section>
     <h3>User-land Promise libraries</h3>
@@ -547,6 +807,7 @@
   <section>
     <p>How to detect unhandled rejections?
   </section>
+  <!--
   <section>
     <h3>Invalid API usage<br/>vs.<br/>operational errors</h3>
     <p>(see <a href="https://www.joyent.com/node-js/production/design/errors">Error Handling in Node.js</a>)
@@ -556,8 +817,9 @@
     <pre><code class="javascript" data-trim>
     fs.readFile(undefined, console.log)
     </code></pre>
+    <div class="fragment">
     <p>(process crashed)
-    <pre><code class="json" data-trim>
+    <pre><code class="nohighlight" data-trim>
     fs.js:358
       binding.open(pathModule._makeLong(path),
               ^
@@ -566,144 +828,43 @@
         at Object.fs.readFile (fs.js:358:11)
         (...)
     </code></pre>
+    </div>
   </section>
   <section>
     <h4>Operational error with a callback</h4>
     <pre><code class="javascript" data-trim>
     fs.readFile('unknown.txt', console.log)
     </code></pre>
+    <div class="fragment">
     <p>(the process happily keeps running)
-    <pre><code class="json" data-trim>
+    <pre><code class="nohighlight" data-trim>
     { Error: ENOENT: no such file or directory, open 'unknown.txt'
       errno: -2,
       code: 'ENOENT',
       syscall: 'open',
       path: 'does-not-exist' }
     </code></pre>
+    </div>
   </section>
   <section>
-    <h4>Any error in an async function</h4>
-    <p>always reported as a promise rejection
-    <p><em>(discussion: <a href="https://github.com/nodejs/promises/issues/10">nodejs/promises#10</a>)</em>
+    <h4>Async functions always return<br/>a rejected promise</h4>
+    <p class="note">(discussion: <a href="https://github.com/nodejs/promises/issues/10">nodejs/promises#10</a>)
   </section>
   <section>
     <h3>Post-mortem debugging</h3>
-    <p><code>node --abort-on-uncaught-exception</code>
+    <p><code>node -{FIXME}- abort-on-uncaught-exception</code>
     <p><em>(learn more: <a href="https://www.joyent.com/blog/post-mortem-debugging-and-promises">Post-mortem Debugging and Promises</a>)</em>
   </section>
-</section>
-<section>
-  <section>
-    <h2>Performance</h2>
-  </section>
-  <section>
-    <h3>Microbenchmark</h3>
-    <canvas data-chart="horizontalBar">
-      <!--
-        {
-          "data": {
-            "labels": [
-              "callbacks",
-              "Bluebird",
-              "await Bluebird",
-              "util.promisify",
-              "await util.promisify"
-            ],
-            "datasets": [{
-              "label": "time to complete (ms) - smaller is better",
-              "data": [161, 273, 259, 341, 330],
-              "backgroundColor": [
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(183, 128, 162, 0.6)",
-                "rgba(162, 183, 128, 0.6)",
-                "rgba(183, 128, 162, 0.6)",
-                "rgba(162, 183, 128, 0.6)"
-              ]
-            }]
-          },
-          "options": {
-            "scales": {
-              "xAxes":[{"ticks":{"beginAtZero":true}}]
-            }
-          }
-        }
-      -->
-    </canvas>
-    <p class="note"><a href="https://github.com/strongloop-forks/bluebird/tree/async/await">https://github.com/strongloop-forks/bluebird/tree/async/await</a>
-  </section>
-
-  <section>
-    <h3>Promisified core APIs</h3>
-    <canvas data-chart="horizontalBar">
-      <!--
-        {
-          "data": {
-            "labels": [
-              "fstat (callback)",
-              "fstat (fs.promise)",
-              "lstat (callback)",
-              "lstat (fs.promise)",
-              "stat (callback)",
-              "stat (fs.promise)"
-            ],
-            "datasets": [{
-              "label": "time to complete (ms) - smaller is better",
-              "data": [0.315, 0.295, 0.272, 0.256, 0.262, 0.253],
-              "backgroundColor": [
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(162, 183, 128, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(162, 183, 128, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(162, 183, 128, 0.6)"
-              ]
-            }]
-          },
-          "options": {
-            "scales": {
-              "xAxes":[{"ticks":{"beginAtZero":true}}]
-            }
-          }
-        }
-      -->
-    </canvas>
-  </section>
-  <section>
-    <h3>A "real" app</h3>
-    <canvas data-chart="horizontalBar">
-      <!--
-        {
-          "data": {
-            "labels": ["Hapi", "Fastify", "Koa+router", "Express"],
-            "datasets": [{
-              "label": "requests per second - higher is better",
-              "data": [5875, 7905, 7269, 5610],
-              "backgroundColor": [
-                "rgba(162, 183, 128, 0.6)",
-                "rgba(54, 162, 235, 0.6)",
-                "rgba(162, 183, 128, 0.6)",
-                "rgba(54, 162, 235, 0.6)"
-              ]
-            }]
-          },
-          "options": {
-            "scales": {
-              "xAxes":[{"ticks":{"beginAtZero":true}}]
-            }
-          }
-        }
-      -->
-    </canvas>
-    <p class="note"><a href="https://github.com/bajtos/async-frameworks">https://github.com/bajtos/async-frameworks</a>
-  </section>
+  -->
 </section>
 
+<!--
 <section>
   <section>
     <h2>Streams</h2>
+    <p>(the future)
   </section>
 
-  <!--
   <section>
     <ul>
       <li>reading from streams
@@ -713,7 +874,6 @@
       <li>creating Transform streams
     </ul>
   </section>
-  -->
 
   <section>
     <h3>Pipelines</h3>
@@ -742,7 +902,7 @@
     </code></pre>
     <p class="note">(requires Node.js 10.x)
   </section>
-  <!--
+
   <section>
     <h4>Write to streams</h4>
     <p><em>(just dreaming)</em>
@@ -802,10 +962,39 @@
     </code></pre>
     <p>backpressure!
   </section>
-  -->
   <section>
     <h4>And the rest?</h4>
     <p>The exact shape of the new Streams API in Node.js is not determined yet.
+  </section>
+</section>
+-->
+
+<section>
+  <section>
+  <h2>Migration guide</h2>
+  </section>
+
+  <section>
+    <p>Complete rewrite is almost never
+    <p>the right thing to do.
+  </section>
+
+  <section>
+    <p>Keep delivering value to your clients.
+  </section>
+
+  <section>
+    <p>Work incrementally.
+    <p class="fragment">Focus on code that changes most often.
+    <p class="fragment">Use your test suite to drive the priorities.
+  </section>
+
+  <section>
+    <ol>
+      <li>Go outside-in: API first, implementation second.
+      <li class="fragment">Promisify internal APIs,<br/>preserve support for callbacks.
+      <li class="fragment">Eventually replace callbacks with <code>await</code>
+    </ol>
   </section>
 </section>
 
@@ -814,16 +1003,15 @@
     <h2>Key takeaways</h2>
   </section>
   <section>
-    <p><code>async</code> functions are awesome
+    <p>async functions are awesome
     <p>and ready to use
   </section>
   <section>
-    <p>understand the caveats
-    <p class="note">(brought by the new programming model)
+    <p>learn the new programming model
+    <p class="note">(and its caveats)
   </section>
   <section>
-    <p>know your dependencies
-    <p class="note">(and the Promise libraries they use)
+    <p>upgrade your code base incrementally
   </section>
 </section>
 
@@ -834,9 +1022,8 @@
 <br/>
 <br/>
 <p><em>Miroslav Bajtoš</em>
-<p><a href="https://bajtos.net/">https://bajtos.net/</a>
+<p><a href="https://github.com/bajtos">https://github.com/bajtos</a>
 </section>
-
 
 
 <!-- ======= SLIDES END ======= -->
