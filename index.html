@@ -90,39 +90,33 @@
 </section>
 
   <!--
-    My personal story.
+    My name is Miroslav Bajtoš and I started developing on Node.js
+    when I joined StrongLoop in April 2013. I quickly embraced the
+    emphasis on stability and performance that was the norm
+    in the Node.js core team at that time.
 
-    I started developing on Node.js platform when I joined StrongLoop
-    in 2013, shortly after Node.js 0.10 was released and Node.js was all
-    about callbacks and streams. ES6 was many years away, Promises were
-    considered almost as a heresy and async/await was not even conceived
-    (for JavaScript). The programming model wasn't great - it required
-    a lot of ceremonies and made it easy to introduce subtle bugs,
-    but over time I sort of got used to it.
+    When my colleagues proposed to rewrite LoopBack in async/await style
+    at the end of 2016, I was like no way! async/await was hidden behind
+    a feature flag, the performance was terrible. And by terrible I mean
+    async/await was about ~6x slower than callbacks.
 
-    As ES6 was solidifying and work began on the future versions, people
-    started to search for even better primitives for flow control.
-    Around 2014, generator functions were the new star, I still remember
-    a talk from NodeSummit 2014 where they explained how to implement
-    async/await using generators. Crazy stuff!
+    Fast forward to now, and I am happy that we decided to embrace this
+    new programming model. We are still maintaining our legacy code base
+    from ES5 days and it's so less fun than ES2017!
 
-    Now in LoopBack, we made a decision in January 2017 to rewrite the framework
-    from scratch using TypeScript and latest language goodness including
-    async/await.
-
-    At that time, async/await was available in Node.js behind a feature
-    flag and the performance was terrible. And by terrible I mean async/await
-    was about ~6x slower than callbacks. I was not happy about that
-    and wanted to better understand pros and cons of the new programming
-    model. In the past two years, I was closely watching evolution of async
-    functions and at the same time gaining hands-on experience by writing
-    our new framework version using async/await.
-
-    Today I am happy that my scepticism was overruled by other team members
-    and our new codebase is using async functions everywhere. We are still
-    maintaining our legacy code base from ES5 days and it's so less fun than
-    ES2017!
+    In my talk, I'd like to help you understand the current status
+    so that you can make your own informed decision.
   -->
+
+<section>
+  <h2>😱</h2>
+  <p class="note">(me in 2016/2017)
+</section>
+
+<section>
+  <h2>👌</h2>
+  <p class="note">(me in 2018)
+</section>
 
 <section>
   <h2>Agenda</h2>
@@ -142,13 +136,14 @@
   <section>
     <h3>Definition</h3>
     <p style="font-size: 0.8em">
-    <div>An <em>async function</em> can contain an <em>await expression</em></div>
+    <div class="fragment">An <em>async function</em> can contain an <em>await expression</em></div>
     <div class="fragment">that pauses the execution of the async function</div>
     <div class="fragment">and waits for the passed Promise's resolution,</div>
     <div class="fragment">and then resumes the async function's execution</div>
-    <div class="fragment">and returns the resolved value.</div>
+    <div class="fragment">and returns the resolved value.
     <p class="note" style="text-align: right; padding-top: 2em">Source: <a
        href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function">Mozilla web docs</a>
+    </div>
   </section>
 
   <section>
@@ -161,7 +156,7 @@
       }
     </code></pre>
     <div class="fragment">
-    <p>callbacks
+    <p>callback
     <pre><code class="javascript line-numbers" data-trim>
       function run(callback){
         request('http://example.com/', (error, response) => {
@@ -187,7 +182,7 @@
 
     Our legacy codebase is full of code like this.
   -->
-  <section><pre><code class="javascript" data-trim data-noescape>
+  <section><pre><code class="javascript line-numbers" data-trim data-noescape>
   it('creates a product in a category', (done) =&gt; {
     Category.create({name: 'Food'}, (err, cat) =&gt; {
       <mark class="fragment">if (err) return done(err);</mark>
@@ -205,7 +200,7 @@
   <!--
     SOLUTION: await enables imperative/sync-like code and propagates errors
   -->
-  <section><pre><code class="javascript" data-trim data-noescape>
+  <section><pre><code class="javascript line-numbers" data-trim data-noescape>
   it('creates a product in a category', <mark>async ()</mark> =&gt; {
     const cat = <mark>await</mark> Category.create({name: 'Food'});
     const prod = <mark>await</mark> cat.products.create({name: 'Apple'});
@@ -574,15 +569,30 @@
 <section>
   <section>
     <h2>Tips &amp; tricks</h2>
+    <!--
+      parallel vs serial
+      consume callbacks
+      consume events
+      produce callbacks
+      streams
+    -->
   </section>
 
   <section>
-    <p>run tasks in parallel
+    <h3>Parallel vs. serial</h3>
+  </section>
+
+  <section>
+    <p><code>await</code> executes tasks serially
+  </section>
+
+  <section>
+    <p>use <code>Promise.all()</code> to run in parallel
     <!--
       `await` runs tasks in series
       use `Promise.all` for parallel execution
     -->
-    <pre><code class="javascript" data-trim>
+    <pre class="fragment"><code class="javascript line-numbers" data-trim>
     const [walkResult, talkResult] = await Promise.all([
       walk(),
       talk(),
@@ -591,29 +601,12 @@
   </section>
 
   <section>
-    <p>await events
-    <pre><code class="javascript" data-trim data-noescape>
-    const http = require('http');
-    <mark>const pEvent = require('p-event');</mark>
-
-    async function start(handler) {
-      const server = http.createServer(handler);
-      server.listen(0);
-
-      <mark>await pEvent(server, 'listen');</mark>
-      return `http://localhost:${server.address().port}/`;
-    }
-
-    start(/*handler*/).then(
-      url =&gt; console.log('Listening on:', url),
-      <mark>err =&gt; console.log('Cannot start the server:', err)</mark>
-    );
-    </code></pre>
+    <h3>Consume callbacks</h3>
   </section>
 
   <section>
     <p>await callback-based functions
-    <pre><code class="javascript" data-trim data-noescape>
+    <pre><code class="javascript line-numbers" data-trim data-noescape>
     const util = require('util');
     const fs = require('fs');
     <mark>const readFile = util.promisify(fs.readFile);</mark>
@@ -635,14 +628,15 @@
     </div>
   </section>
 
+  <!--
 
   <section>
-    <h3>Multiple callback arguments</h3>
+    <h4>Multiple callback arguments</h4>
   </section>
 
   <section>
     <p>Node.js core API
-    <pre><code class="javascript" data-trim data-noescape>
+    <pre><code class="javascript line-numbers" data-trim data-noescape>
     fs.read(fd, buffer, offset, len, pos,
       <mark>(err, bytesRead, buffer)</mark> =&gt; {
         // ...
@@ -656,7 +650,7 @@
   <section>
     <p>User-land API
     <p>you are own your own :(</p>
-    <pre><code class="javascript" data-trim data-noescape>
+    <pre><code class="javascript line-numbers" data-trim data-noescape>
     function whoami(callback) {
      callback(null, 'Miroslav', 'Bajtos');
     }
@@ -682,13 +676,37 @@
     <p class="note">(see <a href="https://nodejs.org/dist/latest-v8.x/docs/api/util.html#util_custom_promisified_functions">
       Custom promisified functions</a> in Node.js docs)
   </section>
+  -->
 
   <section>
-    <h3>Async functions in<br/>callback-based code</h3>
+    <p>await events
+    <pre><code class="javascript line-numbers" data-trim data-noescape>
+    const http = require('http');
+    <mark>const pEvent = require('p-event');</mark>
+
+    async function start(handler) {
+      const server = http.createServer(handler);
+      server.listen(0);
+
+      <mark>await pEvent(server, 'listen');</mark>
+      return `http://localhost:${server.address().port}/`;
+    }
+
+    start(/*handler*/).then(
+      url =&gt; console.log('Listening on:', url),
+      <mark>err =&gt; console.log('Cannot start the server:', err)</mark>
+    );
+    </code></pre>
   </section>
+
+  <section>
+    <h3>Produce callbacks</h3>
+    <p class="note">async functions in callback-based code
+  </section>
+
   <section>
     <p>Can you spot two problems?
-    <pre><code class="javascript" data-trim>
+    <pre><code class="javascript line-numbers" data-trim>
     async function step() {
       return 'some data';
     }
@@ -702,7 +720,7 @@
   </section>
   <section>
     <p>the right way&trade;
-    <pre><code class="javascript" data-trim>
+    <pre><code class="javascript line-numbers" data-trim>
     async function step() {
       return 'some data';
     }
@@ -724,7 +742,7 @@
 
   <section>
     <p>async iteration
-    <pre><code class="javascript" data-trim data-noescape>
+    <pre><code class="javascript line-numbers" data-trim data-noescape>
     const input = byline(
       fs.createReadStream(pathToFile, {encoding: 'utf-8'}))
     );
@@ -738,7 +756,7 @@
 
   <section>
     <p>pipelines
-    <pre><code class="javascript" data-trim>
+    <pre><code class="javascript line-numbers" data-trim>
     const pipeline = util.promisify(stream.pipeline);
 
     await pipeline(
@@ -756,8 +774,8 @@
     <h2>Caveats</h2>
   </section>
   <section>
-    <p><code>async</code> functions return a native promise
-    <pre><code class="javascript" data-trim data-noescape>
+    <p>async functions return a native promise
+    <pre class="fragment"><code class="javascript" data-trim data-noescape>
     const Bluebird = require('bluebird');
     async function run() {
       return Bluebird.resolve(1);
@@ -775,6 +793,7 @@
   </section>
   <section>
     <p><code>return await</code> or not?
+    <div class="fragment">
     <pre><code class="javascript" data-trim>
     async function getRepos() {
       const url = 'https://api.github.com/users/bajtos/repos';
@@ -789,7 +808,13 @@
     <p>avoid <a
       href="http://exploringjs.com/es2016-es2017/ch_async-functions.html#_returned-promises-are-not-wrapped">promise
       rewrapping</a>
+    </div>
   </section>
+
+  <section>
+    <h3>Error handling</h3>
+  </section>
+
   <section>
     <p>unhandled errors (callbacks)</p>
     <pre><code class="javascript" data-trim>
