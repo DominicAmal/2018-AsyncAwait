@@ -90,8 +90,10 @@
     before migrating from callbacks
   </em></h4>
   <br/>
-  <br/>
-  <div style="text-align: right">Miroslav Bajtoš</div>
+  <div style="text-align: right">
+    <p>Miroslav Bajtoš
+    <p><em>Lead Node.js Engineer @ IBM</em>
+  </div>
 </section>
 
   <!--
@@ -169,7 +171,7 @@
     <p>consume promises
     <pre><code class="javascript" data-trim data-noescape>
     function sleep(ms) {
-      return new Promise((resolve, reject) => {
+      <mark>return new Promise</mark>((resolve, reject) => {
         setTimeout(resolve, ms);
       });
     }
@@ -182,21 +184,20 @@
   <section>
     <p>produce promises
     <pre><code class="javascript" data-trim data-noescape>
-    async function step() {
-      console.log('raise your foot');
-      await sleep(100);
-      console.log('lower your foot');
-      return 'made a step';
+    async function respondToQuestion() {
+      await sleep(500); // (think)
+      return 'my answer';
     }
     </code></pre>
     <pre class="fragment"><code class="javascript" data-trim data-noescape>
-    step().then(result => console.log(result));
+    respondToQuestion()
+      <mark>.then</mark>(result => console.log(result));
     </code></pre>
   </section>
 
 
   <section>
-    <h3>Cleaner code</h3>
+    <h3>Clean & robust code</h3>
   </section>
 
   <!--
@@ -214,7 +215,7 @@
       <mark class="fragment" data-fragment-index="1">if (err) return done(err);</mark>
 
       cat.products.create({name: 'Apple'}, (err, prod) =&gt; {
-        <mark class="fragment" data-fragment-index="1"> if (err) return done(err);</mark>
+        <mark class="fragment" data-fragment-index="1">if (err) return done(err);</mark>
 
         expect(prod).to.have.property('categoryId', cat.id);
         done();
@@ -225,12 +226,25 @@
 
   <section><pre><code class="javascript line-numbers" data-trim data-noescape>
   it('creates a product in a category', () =&gt; {
-    <mark class="fragment" data-fragment-index="1">return</mark> Category.create({name: 'Food'})
-      .then(category => {
-        <mark class="fragment" data-fragment-index="1">return</mark> category.products.create({name: 'Apple'});
+    Category.create({name: 'Food'})
+      .then(cat => {
+        cat.products.create({name: 'Apple'});
       })
-      .then(product => {
-        expect(product).to.have.property('categoryId', cat.id);
+      .then(prod => {
+        expect(prod).to.have.property('categoryId', cat.id);
+      });
+    });
+  });
+  </code></pre></section>
+
+  <section><pre><code class="javascript line-numbers" data-trim data-noescape>
+  it('creates a product in a category', () =&gt; {
+    <mark>return</mark> Category.create({name: 'Food'})
+      .then(cat => {
+        <mark>return</mark> cat.products.create({name: 'Apple'});
+      })
+      .then(prod => {
+        expect(prod).to.have.property('categoryId', cat.id);
       });
     });
   });
@@ -346,7 +360,7 @@
          height="150"
     />
     <p><em>(see <a
-       href="https://github.com/nodejs/node/issues/15413">nodejs/node#15413)</a></em>
+       href="https://github.com/nodejs/node/issues/15413">nodejs/node#15413</a>)</em>
   </section>
 
   <section>
@@ -581,57 +595,6 @@
 <section>
   <section>
     <h2>Tips &amp; tricks</h2>
-    <!--
-      parallel vs serial
-      consume callbacks
-      consume events
-      produce callbacks
-      streams
-    -->
-  </section>
-
-  <section>
-    <h3>Parallel vs. serial</h3>
-  </section>
-
-  <section>
-    <p><code>await</code> executes tasks serially
-    <pre class="fragment"><code class="javascript line-numbers" data-trim>
-    const walkResult = await walk();
-    const talkResult = await talk();
-    </code></pre>
-  </section>
-
-  <section>
-    <p>use <code>Promise.all()</code> to run in parallel
-    <!--
-      `await` runs tasks in series
-      use `Promise.all` for parallel execution
-    -->
-    <pre class="fragment"><code class="javascript line-numbers" data-trim>
-    const [walkResult, talkResult] = await Promise.all([
-      walk(),
-      talk(),
-    ]);
-    </code></pre>
-  </section>
-
-  <section>
-    <p>map arrays</p>
-    <pre class="fragment"><code class="javascript line-numbers" data-trim data-noescape>
-    const sources = [
-      'http://example.com',
-      'http://nodesummit.com'
-    ];
-
-    // download all URLs
-    const result = source.map(
-      <span class="fragment">async (url) =&gt; await request(url)</span>
-    );
-    <span class="fragment">// result is an array of promises!
-
-    const actualResult = await Promise.all(result);</span>
-    </code></pre>
   </section>
 
   <section>
@@ -661,56 +624,6 @@
       <code>pify</code></a>
     </div>
   </section>
-
-  <!--
-
-  <section>
-    <h4>Multiple callback arguments</h4>
-  </section>
-
-  <section>
-    <p>Node.js core API
-    <pre><code class="javascript line-numbers" data-trim data-noescape>
-    fs.read(fd, buffer, offset, len, pos,
-      <mark>(err, bytesRead, buffer)</mark> =&gt; {
-        // ...
-      });
-
-    const readAsync = util.promisify(fs.read);
-    <mark>const {bytesRead, buffer} = await readAsync</mark>(fd, /*...*/pos);
-    </code></pre>
-  </section>
-
-  <section>
-    <p>User-land API
-    <p>you are own your own :(</p>
-    <pre><code class="javascript line-numbers" data-trim data-noescape>
-    function whoami(callback) {
-     callback(null, 'Miroslav', 'Bajtos');
-    }
-
-    function whoamiAsync() {
-      return new Promise((resolve, reject) =&gt; {
-        whoami(<mark>(err, name, surname)</mark> =&gt; {
-          if (err) reject(err);
-          else <mark>resolve({name, surname});</mark>
-        });
-      });
-    };
-
-    const {name, surname} = await whoamiAsync();
-    </code></pre>
-  </section>
-
-  <section>
-    <p>if you own the API
-    <pre><code class="javascript" data-trim data-noescape>
-    whoami[util.promisify.custom] = whoamiAsync;
-    </code></pre>
-    <p class="note">(see <a href="https://nodejs.org/dist/latest-v8.x/docs/api/util.html#util_custom_promisified_functions">
-      Custom promisified functions</a> in Node.js docs)
-  </section>
-  -->
 
   <section>
     <p>await events
@@ -768,6 +681,50 @@
           err => process.nextTick(() => { throw err; })
         });
     });
+    </code></pre>
+  </section>
+
+  <section>
+    <h3>Parallel vs. serial</h3>
+  </section>
+
+  <section>
+    <p><code>await</code> executes tasks serially
+    <pre class="fragment"><code class="javascript line-numbers" data-trim>
+    const walkResult = await walk();
+    const talkResult = await talk();
+    </code></pre>
+  </section>
+
+  <section>
+    <p>use <code>Promise.all()</code> to run in parallel
+    <!--
+      `await` runs tasks in series
+      use `Promise.all` for parallel execution
+    -->
+    <pre class="fragment"><code class="javascript line-numbers" data-trim>
+    const [walkResult, talkResult] = await Promise.all([
+      walk(),
+      talk(),
+    ]);
+    </code></pre>
+  </section>
+
+  <section>
+    <p>map arrays</p>
+    <pre class="fragment"><code class="javascript line-numbers" data-trim data-noescape>
+    const sources = [
+      'http://example.com',
+      'http://nodesummit.com'
+    ];
+
+    // download all URLs
+    const result = source.map(
+      <span class="fragment">async (url) =&gt; await request(url)</span>
+    );
+    <span class="fragment">// result is an array of promises!
+
+    const actualResult = await Promise.all(result);</span>
     </code></pre>
   </section>
 
@@ -868,167 +825,7 @@
     <p><br/>
     <p class="fragment"><em>How to detect unhandled rejections?</em>
   </section>
-  <!--
-  <section>
-    <h3>Invalid API usage<br/>vs.<br/>operational errors</h3>
-    <p>(see <a href="https://www.joyent.com/node-js/production/design/errors">Error Handling in Node.js</a>)
-  </section>
-  <section>
-    <h4>Invalid API usage with a callback</h4>
-    <pre><code class="javascript" data-trim>
-    fs.readFile(undefined, console.log)
-    </code></pre>
-    <div class="fragment">
-    <p>(process crashed)
-    <pre><code class="nohighlight" data-trim>
-    fs.js:358
-      binding.open(pathModule._makeLong(path),
-              ^
-
-    TypeError: path must be a string or Buffer
-        at Object.fs.readFile (fs.js:358:11)
-        (...)
-    </code></pre>
-    </div>
-  </section>
-  <section>
-    <h4>Operational error with a callback</h4>
-    <pre><code class="javascript" data-trim>
-    fs.readFile('unknown.txt', console.log)
-    </code></pre>
-    <div class="fragment">
-    <p>(the process happily keeps running)
-    <pre><code class="nohighlight" data-trim>
-    { Error: ENOENT: no such file or directory, open 'unknown.txt'
-      errno: -2,
-      code: 'ENOENT',
-      syscall: 'open',
-      path: 'does-not-exist' }
-    </code></pre>
-    </div>
-  </section>
-  <section>
-    <h4>Async functions always return<br/>a rejected promise</h4>
-    <p class="note">(discussion: <a href="https://github.com/nodejs/promises/issues/10">nodejs/promises#10</a>)
-  </section>
-  <section>
-    <h3>Post-mortem debugging</h3>
-    <p><code>node -{FIXME}- abort-on-uncaught-exception</code>
-    <p><em>(learn more: <a href="https://www.joyent.com/blog/post-mortem-debugging-and-promises">Post-mortem Debugging and Promises</a>)</em>
-  </section>
-  -->
 </section>
-
-<!--
-<section>
-  <section>
-    <h2>Streams</h2>
-    <p>(the future)
-  </section>
-
-  <section>
-    <ul>
-      <li>reading from streams
-      <li>writing to streams
-      <li>creating Readable streams
-      <li>creating Writable streams
-      <li>creating Transform streams
-    </ul>
-  </section>
-
-  <section>
-    <h3>Pipelines</h3>
-    <pre><code class="javascript" data-trim>
-    const pipeline = util.promisify(stream.pipeline);
-
-    await pipeline(
-      fs.createReadStream('archive.tar'),
-      zlib.createGzip(),
-      fs.createWriteStream('archive.tar.gz')
-    );
-    </code></pre>
-    <p class="note">(requires Node.js 10.x)
-  </section>
-
-  <section>
-    <h3>Streams as Async Iterators</h3>
-    <pre><code class="javascript" data-trim data-noescape>
-    const input = byline(
-      fs.createReadStream(pathToFile, {encoding: 'utf-8'}))
-    );
-
-    for await (const line of input) {
-      console.log(line);
-    }
-    </code></pre>
-    <p class="note">(requires Node.js 10.x)
-  </section>
-
-  <section>
-    <h4>Write to streams</h4>
-    <p><em>(just dreaming)</em>
-    <pre><code class="javascript" data-trim data-noescape>
-    for await (const chunk of src) {
-      await dest.write(chunk);
-    }
-    await dest.end();
-    </code></pre>
-    <p>backpressure!
-  </section>
-  <section>
-    <h4>Create Readable streams</h4>
-    <p><em>(just dreaming)</em>
-    <pre><code class="javascript" data-trim data-noescape>
-      new ReadableStream({
-        async * _read() {
-          for (const url of sourceUrls) {
-            yield await fetch(url);
-          }
-        }
-      });
-    </code></pre>
-  </section>
-  <section>
-    <h4>Create Writable streams</h4>
-    <p><em>(just dreaming)</em>
-    <pre><code class="javascript" data-trim data-noescape>
-    new WritableStream({
-      <mark>async write(chunk, encoding)</mark> {
-        //...
-      },
-      <mark>async destroy()</mark> {
-        // ...
-      },
-    });
-    </code></pre>
-    <p>backpressure!
-  </section>
-  <section>
-    <h4>Create Transform streams</h4>
-    <pre><code class="javascript" data-trim data-noescape>
-    new TransformStream({
-      buffer: '';
-      <mark>async *transform(chunk, encoding)</mark> {
-        buffer += chunk;
-        const lines = /*await*/ buffer.split('\n');
-        buffer = lines.pop();
-        for (const l of lines) {
-          yield l;
-        }
-      },
-      <mark>async *flush()</mark> {
-        yield buffer;
-      },
-    });
-    </code></pre>
-    <p>backpressure!
-  </section>
-  <section>
-    <h4>And the rest?</h4>
-    <p>The exact shape of the new Streams API in Node.js is not determined yet.
-  </section>
-</section>
--->
 
 <section>
   <section>
@@ -1079,12 +876,12 @@
 
 <section>
 <br/>
-<br/>
 <h2>Thank you!</h2>
 <br/>
-<br/>
-<p><em>Miroslav Bajtoš</em>
-<p><a href="https://github.com/bajtos">https://github.com/bajtos</a>
+<p>Miroslav Bajtoš
+<p><a href="https://github.com/bajtos">github.com/bajtos</a>
+<p><br/>
+<p class="note">(slides: <a href="https://bajtos.net/2018-AsyncAwait">bajtos.net/T</a>)
 </section>
 
 
