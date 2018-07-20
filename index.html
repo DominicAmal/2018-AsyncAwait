@@ -129,8 +129,8 @@
   <h2>Agenda</h2>
   <ul>
     <li class="fragment"><code>async</code> and <code>await</code> are awesome!
-    <li class="fragment">runtime &amp; ecosystem readiness
-    <li class="fragment">tips, tricks and caveats
+    <li class="fragment">are they ready for prime time?
+    <li class="fragment">practical aspects
   </ul>
 </section>
 
@@ -155,12 +155,23 @@
 
   <section>
     <h3>Example</h3>
-    <pre><code class="javascript line-numbers" data-trim data-noescape>
-      async function checkStatus(){
-        const response = await request('http://example.com/');
-        return response.statusCode === 200;
+    <pre><code class="javascript" data-trim data-noescape>
+      <mark>async</mark> function checkStatus(){
+        const response = <mark>await</mark> request('http://example.com/');
+        <mark>return</mark> response.statusCode === 200;
       }
     </code></pre>
+    <div class="fragment">
+      <p>callback style
+      <pre><code class="javascript" data-trim data-noescape>
+        function checkStatus(callback){
+          request('http://example.com/', (error, callback) => {
+            if (error) return callback(error);
+            callback(null, response.statusCode === 200);
+          });
+        }
+      </code></pre>
+    </div>
   </section>
 
   <section>
@@ -195,72 +206,6 @@
     </code></pre>
   </section>
 
-
-  <section>
-    <h3>Clean & robust code</h3>
-  </section>
-
-  <!--
-    PROBLEM: people forget to add code to handle errors,
-    the algorithm runs as if all was good and crashed later
-    with an error difficult to understand (often on access to "undefined")
-
-    Nested function and callback hell/Christmas tree.
-
-    Our legacy codebase is full of code like this.
-  -->
-  <section><pre><code class="javascript line-numbers" data-trim data-noescape>
-  it('creates a product in a category', (done) =&gt; {
-    Category.create({name: 'Food'}, (err, cat) =&gt; {
-      <mark class="fragment" data-fragment-index="1">if (err) return done(err);</mark>
-
-      cat.products.create({name: 'Apple'}, (err, prod) =&gt; {
-        <mark class="fragment" data-fragment-index="1">if (err) return done(err);</mark>
-
-        expect(prod).to.have.property('categoryId', cat.id);
-        done();
-      });
-    });
-  });
-  </code></pre></section>
-
-  <section><pre><code class="javascript line-numbers" data-trim data-noescape>
-  it('creates a product in a category', () =&gt; {
-    Category.create({name: 'Food'})
-      .then(cat => {
-        cat.products.create({name: 'Apple'});
-      })
-      .then(prod => {
-        expect(prod).to.have.property('categoryId', cat.id);
-      });
-    });
-  });
-  </code></pre></section>
-
-  <section><pre><code class="javascript line-numbers" data-trim data-noescape>
-  it('creates a product in a category', () =&gt; {
-    <mark>return</mark> Category.create({name: 'Food'})
-      .then(cat => {
-        <mark>return</mark> cat.products.create({name: 'Apple'});
-      })
-      .then(prod => {
-        expect(prod).to.have.property('categoryId', cat.id);
-      });
-    });
-  });
-  </code></pre></section>
-
-  <!--
-    SOLUTION: await enables imperative/sync-like code and propagates errors
-  -->
-  <section><pre><code class="javascript line-numbers" data-trim data-noescape>
-  it('creates a product in a category', <mark>async ()</mark> =&gt; {
-    const cat = <mark>await</mark> Category.create({name: 'Food'});
-    const prod = <mark>await</mark> cat.products.create({name: 'Apple'});
-    expect(prod).to.have.property('categoryId', cat.id);
-  });
-  </code></pre></section>
-
   <!-- A PERK: troubleshooting is so much easier -->
   <section>
     <h3>Better error stack traces</h3>
@@ -279,7 +224,7 @@
     </code></pre>
     <pre class="fragment"><code class="nohighlight" data-trim data-noescape>
     Error: too tired
-        <mark>at step</mark> (walk-callback.js:5:8)
+        <mark>at step</mark> (callback.js:5:8)
         at process._tickCallback (next_tick.js:61:11)
     </code></pre>
   </section>
@@ -297,7 +242,7 @@
     </code></pre>
     <pre class="fragment"><code class="nohighlight" data-trim data-noescape>
     Error: too tired
-        <mark>at step.then</mark> (walk-promise.js:5:11)
+        <mark>at step.then</mark> (promise.js:5:11)
         at process._tickCallback (next_tick.js:68:7)
     </code></pre>
   </section>
@@ -314,7 +259,7 @@
     </code></pre>
     <pre class="fragment"><code class="nohighlight" data-trim data-noescape>
     Error: too tired
-        <mark>at walk</mark> (walk-async.js:5:9)
+        <mark>at walk</mark> (async.js:5:9)
         at process._tickCallback (next_tick.js:68:7)
     </code></pre>
   </section>
@@ -376,7 +321,6 @@
     <p><code>require('fs').promises</code></p>
     <p><code>require('dns').promises</code></p>
   </section>
-</section>
 
 <!--
   Most people don't use low-level core APIs but use higher-level libraries
@@ -385,61 +329,14 @@
   to write HTTP server, connect to HTTP services and different SQL/NoSQL
   databases. Let's take a look at how easy it is to use async/await there.
 -->
-<section>
-  <section>
-    <h2>Ecosystem readiness</h2>
-  </section>
 
   <section>
-    <h3>Server frameworks</h3>
-    <ul class="nodisc">
-      <li class="almostok"><a href="https://www.npmjs.com/package/express">Express</a>
-        <span class="note">(via <a href="https://www.npmjs.com/package/express-promise-router">express-promise-router</a></span>)
-      <li class="ok"><a href="https://www.npmjs.com/package/loopback">LoopBack</a>
-        <span class="note">(REST API layer)</span>
-      <li class="ok"><a href="https://www.npmjs.com/package/hapi">Hapi</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/koa">Koa</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/fastify">Fastify</a>
-        <span class="note">(routes are async, middleware is callback-based.)</span>
-      <li class="almostok"><a href="https://www.npmjs.com/package/restify">Restify</a>
-        <span class="note">(via <a href="https://www.npmjs.com/package/restify-await-promise">restify-await-promise</a></span>)
-    </ul>
-  </section>
-
-
-  <section>
-    <h3>HTTP clients</h3>
-    <ul class="nodisc">
-      <li class="almostok"><a href="https://www.npmjs.com/package/request">request</a>
-        <span class="note">(via <a href="https://www.npmjs.com/package/request-promise-native">request-promise-native</a>)</span>
-      <li class="ok"><a href="https://www.npmjs.com/package/superagent">superagent</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/node-fetch">node-fetch</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/swagger-client">swagger-client</a>
-    </ul>
-  </section>
-
-  <section>
-    <h3>ORMs</h3>
-    <ul class="nodisc">
-      <li class="ok"><a href="https://www.npmjs.com/package/loopback">LoopBack</a>
-        <span class ="note">(ORM layer)</span>
-      <li class="ok"><a href="https://www.npmjs.com/package/knex">Knex</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/bookshelf">Bookshelf</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/sequelize">Sequelize</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/objection">Objection</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/mongoose">Mongoose</a>
-    </ul>
-  </section>
-
-  <section>
-    <h3>Database clients</h3>
-    <ul class="nodisc">
-      <li class="ok"><a href="https://www.npmjs.com/package/mongodb">MongoDB</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/pg">pg (PostgreSQL)</a>
-      <li class="almostok"><a href="https://www.npmjs.com/package/mysql">MySQL</a>
-        <span class ="note">(see 3rd party wrappers adding promise support)</span>
-      <li class="notok"><a href="https://www.npmjs.com/package/redis">Redis</a>
-      <li class="ok"><a href="https://www.npmjs.com/package/ioredis">ioredis</a>
+    <h3>Ecosystem readiness</h3>
+    <ul class="nodisc fragment">
+      <li class="ok">server frameworks</li>
+      <li class="ok">HTTP clients</li>
+      <li class="ok">ORMs</li>
+      <li class="ok">test frameworks</li>
     </ul>
   </section>
 </section>
@@ -594,16 +491,12 @@
 
 <section>
   <section>
-    <h2>Tips &amp; tricks</h2>
+    <h2>5 tips &amp; tricks</h2>
   </section>
 
   <section>
-    <h3>Consume callbacks</h3>
-  </section>
-
-  <section>
-    <p>await callback-based functions
-    <pre><code class="javascript line-numbers" data-trim data-noescape>
+    <h3>1. Consume callbacks</h3>
+    <pre class="fragment"><code class="javascript line-numbers" data-trim data-noescape>
     const util = require('util');
     const fs = require('fs');
     <mark>const readFile = util.promisify(fs.readFile);</mark>
@@ -615,18 +508,7 @@
   </section>
 
   <section>
-    <p>promisify classes
-    <div class="fragment">
-    <p>you are (mostly) on your own :(
-    <p><a href="https://www.npmjs.com/package/pifall">
-      <code>pifall</code></a>
-    <p><a href="https://www.npmjs.com/package/pify">
-      <code>pify</code></a>
-    </div>
-  </section>
-
-  <section>
-    <p>await events
+    <h3>2. await events</h3>
     <pre class="fragment"><code class="javascript line-numbers" data-trim data-noescape>
     const http = require('http');
     <mark>const pEvent = require('p-event');</mark>
@@ -647,7 +529,7 @@
   </section>
 
   <section>
-    <h3>Produce callbacks</h3>
+    <h3>3. produce callbacks</h3>
     <p class="note">async functions in callback-based code
   </section>
 
@@ -685,7 +567,7 @@
   </section>
 
   <section>
-    <h3>Parallel vs. serial</h3>
+    <h3>4. parallel vs. serial</h3>
   </section>
 
   <section>
@@ -711,7 +593,7 @@
   </section>
 
   <section>
-    <p>map arrays</p>
+    <h3>5. how to map array values</h3>
     <pre class="fragment"><code class="javascript line-numbers" data-trim data-noescape>
     const sources = [
       'http://example.com',
@@ -720,37 +602,61 @@
 
     // download all URLs
     const result = source.map(
-      <span class="fragment">async (url) =&gt; await request(url)</span>
+      <span class="fragment"><span class="fragment">async</span> (url) =&gt; await request(url)</span>
     );
     <span class="fragment">// result is an array of promises!
 
     const actualResult = await Promise.all(result);</span>
     </code></pre>
   </section>
-
-  <section>
-    <h3>Streams as async iterators</h3>
-    <div class="fragment">
-    <pre><code class="javascript line-numbers" data-trim data-noescape>
-    const input = byline(
-      fs.createReadStream(pathToFile, {encoding: 'utf-8'}))
-    );
-
-    <mark>for await (const line of input) {</mark>
-      console.log(line);
-    }
-    </code></pre>
-    <p class="note">(requires Node.js 10.x)
-    </div>
-  </section>
 </section>
 
 <section>
   <section>
-    <h2>Caveats</h2>
+    <h2>3 Caveats</h2>
   </section>
   <section>
-    <p>async functions return a native promise
+    <h3>1. Error handling</h3>
+  </section>
+
+  <section>
+    <p>unhandled errors (callbacks)</p>
+    <pre><code class="javascript" data-trim>
+    function tick(callback) {
+      throw new TypeError('undefined is not a function');
+    }
+
+    tick(console.log);
+    </code></pre>
+    <div class="fragment">
+    <p>process crashes
+    <p><a href="https://nodejs.org/api/process.html#process_event_uncaughtexception">
+      <code>process.on('uncaughtException')</code></a>
+    </div>
+  </section>
+  <section>
+    <p>unhandled errors (async)</p>
+    <pre><code class="javascript" data-trim>
+    async function tick() {
+      throw new TypeError('undefined is not a function');
+    }
+
+    // missing await or then
+    tick();
+    </code></pre>
+    <div class="fragment">
+    <p>logs a warning, does not crash (yet)
+    <p><a href="https://nodejs.org/api/process.html#process_event_unhandledrejection">
+      <code>process.on('unhandledRejection')</code></a>
+    </div>
+  </section>
+  <section>
+    <p>user-land Promise libraries
+    <p><br/>
+    <p class="fragment"><em>How to detect unhandled rejections?</em>
+  </section>
+  <section>
+    <h3>2. async function returns<br/>a native promise</h3>
     <pre class="fragment"><code class="javascript" data-trim data-noescape>
     const Bluebird = require('bluebird');
     async function run() {
@@ -766,7 +672,7 @@
     </code></pre>
   </section>
   <section>
-    <p><code>return await</code> or not?
+    <h3>3. await before returning<br/> or not?</h3>
     <div class="fragment">
     <pre><code class="javascript" data-trim>
     async function getRepos() {
@@ -783,47 +689,6 @@
       href="http://exploringjs.com/es2016-es2017/ch_async-functions.html#_returned-promises-are-not-wrapped">promise
       rewrapping</a>
     </div>
-  </section>
-
-  <section>
-    <h3>Error handling</h3>
-  </section>
-
-  <section>
-    <p>unhandled errors (callbacks)</p>
-    <pre><code class="javascript" data-trim>
-    function tick(callback) {
-      throw new Error('BOOM!');
-    }
-
-    tick(console.log);
-    </code></pre>
-    <div class="fragment">
-    <p>process crashes
-    <p><a href="https://nodejs.org/api/process.html#process_event_uncaughtexception">
-      <code>process.on('uncaughtException')</code></a>
-    </div>
-  </section>
-  <section>
-    <p>unhandled errors (async)</p>
-    <pre><code class="javascript" data-trim>
-    async function tick() {
-      throw new Error('BOOM!');
-    }
-
-    // missing await or then
-    tick();
-    </code></pre>
-    <div class="fragment">
-    <p>logs a warning, does not crash (yet)
-    <p><a href="https://nodejs.org/api/process.html#process_event_unhandledrejection">
-      <code>process.on('unhandledRejection')</code></a>
-    </div>
-  </section>
-  <section>
-    <p>user-land Promise libraries
-    <p><br/>
-    <p class="fragment"><em>How to detect unhandled rejections?</em>
   </section>
 </section>
 
@@ -862,8 +727,7 @@
     <h2>Key takeaways</h2>
   </section>
   <section>
-    <p>async functions are awesome
-    <p>and ready to use
+    <p>async functions are ready to use
   </section>
   <section>
     <p>learn the new programming model
